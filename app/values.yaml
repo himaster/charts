@@ -19,6 +19,10 @@ image:
   # -- Secret for [ImageRepository](https://fluxcd.io/flux/components/image/imagerepositories/) in Flux v2.
   repoSecretName: imagesecret
 
+  policy:
+    semver:
+      range: ">=1.0.0"
+
 deployment:
   # -- Enables main Deployment creation. Needed for web service.
   enabled: true

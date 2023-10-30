@@ -21,9 +21,12 @@ metadata:
 spec:
   imageRepositoryRef:
     name: {{ template "project.fullname" . }}
+  {{- if .Values.image.policyFilter }}
+  filterTags:
+    {{- toYaml .Values.image.policyFilter | nindent 4 }}
+  {{- end }}
   policy:
-    semver:
-      range: ">=1.0.0"
+    {{- toYaml .Values.image.policy | nindent 4 }}
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta1
 kind: ImageUpdateAutomation
