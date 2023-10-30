@@ -1,0 +1,110 @@
+{{- if .Values.nginx.enabled }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "project.fullname" . }}-nginx-config
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+data:
+  default.conf: |
+{{ .Values.nginx.config | indent 4 }}
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "project.fullname" . }}-nginx-main-config
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+data:
+  nginx.conf: |
+    worker_processes      1;
+    worker_rlimit_nofile  100000;
+
+    user root;
+
+    error_log /dev/stderr warn;
+
+    events {
+        use epoll;
+        multi_accept on;
+        worker_connections {{ .Values.nginx.customConfig.worker_connections }};
+    }
+
+    http {
+        open_file_cache max=200000 inactive=20s;
+        open_file_cache_valid 30s;
+        open_file_cache_min_uses 2;
+        open_file_cache_errors on;
+
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        access_log  /dev/null;
+
+        sendfile on;
+
+        tcp_nopush on;
+
+        tcp_nodelay on;
+
+        gzip on;
+
+        gzip_min_length 10240;
+        gzip_comp_level 1;
+        gzip_vary on;
+        gzip_disable msie6;
+        gzip_proxied expired no-cache no-store private auth;
+        gzip_types
+            # text/html is always compressed by HttpGzipModule
+            text/css
+            text/javascript
+            text/xml
+            text/plain
+            text/x-component
+            application/javascript
+            application/x-javascript
+            application/json
+            application/xml
+            application/rss+xml
+            application/atom+xml
+            font/truetype
+            font/opentype
+            application/vnd.ms-fontobject
+            image/svg+xml;
+
+        fastcgi_buffering           on;
+        fastcgi_buffers             256 32k;
+        fastcgi_buffer_size         256k;
+        fastcgi_connect_timeout     3s;
+
+        # allow the server to close connection on non responding client, this will free up memory
+        reset_timedout_connection on;
+
+        ## request timed out -- default 60
+        client_body_timeout {{ .Values.nginx.customConfig.client_body_timeout }};
+        client_body_buffer_size     10M;
+
+        ## if client stop responding, free up memory -- default 60
+        send_timeout 2;
+
+        ## server will close connection after this time -- default 75
+        keepalive_timeout {{ .Values.nginx.customConfig.keepalive_timeout }};
+
+        ## number of requests client can make over keep-alive -- for testing environment
+        keepalive_requests 100000;
+
+        include /etc/nginx/conf.d/*.conf;
+    }
+{{- end }}

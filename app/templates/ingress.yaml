@@ -1,0 +1,63 @@
+{{- if .Values.ingress.enabled }}
+{{- $fullname := include "project.fullname" . -}}
+{{- $namespace := include "project.namespace" . -}}
+{{- $annotations := .Values.ingress.annotations -}}
+{{- $values := .Values -}}
+
+{{- range .Values.ingress.skins }}
+{{- $path := .path -}}
+{{- $serviceName := .serviceName -}}
+{{- $skin_annotations := merge (deepCopy $annotations) (default (dict) .annotations) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-{{ .name }}
+  namespace: {{ $namespace }}
+  labels:
+    app: {{ $fullname }}-{{ .name }}
+    application: {{ $fullname }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+  {{- with $skin_annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+    {{- if and $values.ingress.basicAuth.enabled (not $values.ingress.basicAuth.custom) }}
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{ $fullname }}-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if $values.ingress.ingressClassName }}
+  ingressClassName: {{ $values.ingress.ingressClassName }}
+  {{- end -}}
+  {{- if .tls }}
+  tls:
+    - hosts:
+      {{- range .tls }}
+        - {{ . | quote }}
+      {{- end }}
+      secretName: {{ $fullname }}-{{ .name }}-secret
+  {{- end }}
+  rules:
+  {{- range .hosts }}
+    - host: {{ . | quote }}
+      http:
+        paths:
+          {{- if $values.ingress.paths }}
+            {{- toYaml $values.ingress.paths | nindent 10 }}
+          {{ else }}
+          - path: {{ $path | default "/" }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $serviceName | default $fullname }}
+                port:
+                  name: {{ $values.service.name }}
+          {{ end }}
+  {{- end }}
+{{- end }}
+{{- end }}

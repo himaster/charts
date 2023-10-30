@@ -1,0 +1,183 @@
+{{- if .Values.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "project.fullname" . }}
+  {{- if .Values.serviceMonitor.namespace }}
+  namespace: {{ .Values.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    chart: {{ template "project.chart" . }}
+    app: {{ template "project.fullname" . }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    {{- if .Values.serviceMonitor.labels }}
+    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+{{ toYaml .Values.serviceMonitor.endpoints | indent 4 }}
+  jobLabel: "{{ .Release.Name }}"
+  selector:
+    matchLabels:
+      app: {{ template "project.fullname" . }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+
+{{- if .Values.sellprice.enabled }}
+
+{{- if .Values.sellprice.metrics }}
+{{- if .Values.service.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "project.fullname" . }}-sellprice
+  {{- if .Values.serviceMonitor.namespace }}
+  namespace: {{ .Values.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    chart: {{ template "project.chart" . }}
+    app: {{ template "project.fullname" . }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    {{- if .Values.serviceMonitor.labels }}
+    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+  - interval: {{ .Values.serviceMonitor.interval }}
+    {{- if .Values.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+    honorLabels: true
+    port: sellprice
+    path: /metrics
+    scheme: {{ .Values.serviceMonitor.scheme }}
+  jobLabel: "{{ .Release.Name }}"
+  selector:
+    matchLabels:
+      app: {{ template "project.fullname" . }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+{{- end }}
+
+{{- $releasename := .Release.Name -}}
+{{- $releaseservice := .Release.Service -}}
+{{- $releasenamespace := .Release.Namespace -}}
+{{- $fullname := include "project.fullname" . -}}
+{{- $chart := include "project.chart" . -}}
+{{- $values := .Values -}}
+
+{{- if .Values.sellprice.cronjobMetrics.enabled -}}
+{{- if .Values.cronJobs }}
+{{- range .Values.cronJobs }}
+{{- if not .suspend }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ trunc 52 (printf "%s-cron-%s" $releasename (lower .name)) | replace "." "-" }}-sellprice
+  namespace: {{ $releasenamespace }}
+  labels:
+    application: {{ $fullname }}
+    chart: {{ $chart }}
+    app: {{ .name }}
+    app_lower: {{ lower .name }}
+    release: "{{ $releasename }}"
+    heritage: "{{ $releaseservice }}"
+    {{- if $values.serviceMonitor.labels }}
+    {{- toYaml $values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- if $values.sellprice.cronjobMetrics.serviceMonitor.labels }}
+    {{- toYaml $values.sellprice.cronjobMetrics.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - interval: {{ $values.sellprice.cronjobMetrics.serviceMonitor.interval }}
+    {{- if $values.sellprice.cronjobMetrics.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ $values.sellprice.cronjobMetrics.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+      honorLabels: true
+      port: sellprice
+      path: /metrics
+      scheme: {{ $values.sellprice.cronjobMetrics.serviceMonitor.scheme }}
+  jobLabel: "{{ $releasename }}"
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  namespaceSelector:
+    matchNames:
+      - {{ $releasenamespace }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.sellprice.workerMetrics.enabled -}}
+{{- if .Values.workers }}
+{{- range .Values.workers }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ trunc 52 (printf "%s-worker-%s" $releasename (lower .name)) | replace "." "-" }}-sellprice
+  namespace: {{ $releasenamespace }}
+  labels:
+    application: {{ $fullname }}
+    chart: {{ $chart }}
+    app: {{ .name }}
+    app_lower: {{ lower .name }}
+    release: "{{ $releasename }}"
+    heritage: "{{ $releaseservice }}"
+    {{- if $values.serviceMonitor.labels }}
+    {{- toYaml $values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- if $values.sellprice.workerMetrics.serviceMonitor.labels }}
+    {{- toYaml $values.sellprice.workerMetrics.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - interval: {{ $values.sellprice.workerMetrics.serviceMonitor.interval }}
+    {{- if $values.sellprice.workerMetrics.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ $values.sellprice.workerMetrics.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+      honorLabels: true
+      port: sellprice
+      path: /metrics
+      scheme: {{ $values.sellprice.workerMetrics.serviceMonitor.scheme }}
+  jobLabel: "{{ $releasename }}"
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  namespaceSelector:
+    matchNames:
+      - {{ $releasenamespace }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}

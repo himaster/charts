@@ -1,0 +1,26 @@
+{{- if .Values.hpa }}
+---
+apiVersion: {{ .Values.hpa.apiVersion | default "autoscaling/v1 " | quote }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: {{ if and (.Values.statefulset.enabled) (not .Values.deployment.enabled) }}StatefulSet{{ else }}Deployment{{ end }}
+    name: {{ template "project.fullname" . }}
+  targetCPUUtilizationPercentage: {{ .Values.hpa.targetCPUUtilizationPercentage }}
+  {{- if .Values.hpa.metrics.enabled }}
+  metrics:
+    {{- toYaml .Values.hpa.metrics.rules | nindent 4 }}
+  {{- end }}
+{{- end }}

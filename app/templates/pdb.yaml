@@ -1,0 +1,25 @@
+{{- if .Values.budget }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    app: {{ template "project.fullname" . }}
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "project.fullname" . }}
+  {{- if .Values.budget.minAvailable }}
+  minAvailable: {{ .Values.budget.minAvailable }}
+  {{- end }}
+  {{- if .Values.budget.maxUnavailable }}
+  maxUnavailable: {{ .Values.budget.maxUnavailable }}
+  {{- end }}
+{{- end }}

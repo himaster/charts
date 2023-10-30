@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+name: app
+description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/) for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
+
+maintainers:
+- name: himaster
+  email: vitalibicov83@gmail.com
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+#
+# NOTE: this value is set at build time. DO NOT CHANGE.
+#
+version: 1.0.0

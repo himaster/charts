@@ -1,0 +1,52 @@
+{{- if .Values.additionalNfsPvc }}
+
+{{- $namespace := include "project.namespace" . -}}
+{{- $fullname := include "project.fullname" . -}}
+{{- $values := .Values -}}
+
+{{- range .Values.additionalNfsPvc }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullname }}-{{ .name }}
+  namespace: {{ $namespace }}
+  labels:
+    application: {{ $fullname }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .size }}
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $fullname }}-{{ .name }}
+  labels:
+    application: {{ $fullname }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  claimRef:
+    namespace: {{ $namespace }}
+    name: {{ $fullname }}-{{ .name }}
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: {{ .size }}
+  nfs:
+    path: {{ .nfs.path }}
+    server: {{ .nfs.server }}
+  persistentVolumeReclaimPolicy: Delete
+{{- end }}
+{{- end }}

@@ -1,0 +1,732 @@
+# Default values for test.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  # -- main image name and version. Used in data and app containers of web application, in app container of worker and in cron container of cronjob.
+  repository: laravel:latest
+  automationSuspend: "false"
+
+  # -- specifies an [imagePullPolicy](http://kubernetes.io/docs/user-guide/images/#updating-images) of main image.
+  # Possible values: "IfNotPresent", "Always" or "Never"
+  pullPolicy: IfNotPresent
+
+  # -- Define the list of imagePullSecrets for main deployment/statefullset, cronjobs and workers, default secret won't be overwritten.
+  imagePullSecrets: []
+  # Example:
+    # - name: image-pull-secret-0
+
+  # -- Secret for [ImageRepository](https://fluxcd.io/flux/components/image/imagerepositories/) in Flux v2.
+  repoSecretName: imagesecret
+
+deployment:
+  # -- Enables main Deployment creation. Needed for web service.
+  enabled: true
+# -- Set the service account name for the release.
+serviceAccountName: ""
+
+
+# -- Used in spec.update.path of [ImageUpdateAutomation](https://fluxcd.io/flux/components/image/imageupdateautomations/)
+clusterName: "test"
+
+# -- is the string to partially override fullname template (will maintain the release name) and fully override name template.
+nameOverride: ""
+
+# -- is the string to fully override the fullname template.
+fullnameOverride: ""
+
+rbac:
+  # -- Enables [RBAC](https://cloud.google.com/kubernetes-engine/docs/how-to/role-based-access-control) for application.
+  enabled: false
+
+  # -- Specifies the Role or ClusterRole object to be created.
+  # Possible values:
+  # namespace - Role object to be created.
+  # cluster - ClusterRole object to be created.
+  level: "namespace"
+
+  # -- Custom ServiceAccount annotations
+  annotations: {}
+
+  # -- Allows existing Role/ClusterRole usage
+  existingRoleName: ""
+
+  # -- Specifies allowed apiGroups for Role/ClusterRole
+  apiGroups:
+    - ""
+
+  # -- Specifies allowed resources for Role/ClusterRole
+  resources:
+    - "*"
+
+  # -- Specifies allowed verbs for Role/ClusterRole
+  verbs:
+    - get
+    - list
+
+service:
+  # -- Enables Kubernetes [Service object](https://kubernetes.io/docs/concepts/services-networking/service/) creation
+  enabled: true
+
+  # -- Defines Service type
+  # Possible values: "NodePort", "ClusterIP", "LoadBalancer" or "ExternalName"
+  type: NodePort
+
+  # -- Defines Service port number
+  port: 80
+
+  # -- Defines Service port's protocol
+  protocol: TCP
+
+  # -- Name of port in pod
+  targetName: http
+
+  # -- Name of port in service
+  name: http-web
+
+  # -- In order to limit which client IP's can access the Network Load Balancer, specify loadBalancerSourceRanges. NOT WORKS WITH FLANNEL
+  loadBalancerSourceRanges:
+    - "127.0.0.1/32"  # Localhost
+    - "10.0.0.0/8"  # All internals
+
+  # -- extra port for service
+  extraServicePorts: []
+
+ingress:
+  # -- Enable [Ingress object](https://kubernetes.io/docs/concepts/services-networking/ingress/) creation
+  enabled: true
+
+  # -- Ingres's [spec.metadata.annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "10254"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "14400"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Authorization $http_authorization;
+      proxy_pass_header Authorization;
+
+  basicAuth:
+    # -- Add Basic Auth functionality to ingresses
+    enabled: false
+
+    # -- Removes /opt/.htpasswd file when enabled
+    custom: false
+
+    # -- Creates /opt/.htpasswd file
+    auth: ""
+  # -- YAML of paths for service
+  # paths:
+  #   - path: /
+  #   pathType: ImplementationSpecific
+  #   backend:
+  #     service:
+  #       name: test-app-frontend
+  #       port:
+  #         name: http-web
+  #   - path: /login
+  #   pathType: ImplementationSpecific
+  #   backend:
+  #     service:
+  #       name: test-app-backend
+  #       port:
+  #         name: http-web
+  # -- Array of groups of domains
+  skins: []
+  # skins:
+  # - name: ""
+  #   annotations: {}
+  #   hosts: []
+  #   tls: []
+
+# -- Configures [Hook handler execution](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#hook-handler-execution)
+terminationGracePeriodSeconds: 30
+
+# -- Enables [PodDisruptionBudget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) creation
+budget:
+  # -- Configures disruption budget limits
+  # minAvailable:
+  maxUnavailable: 20%
+
+
+appReadinessProbe:
+  # -- Enables [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes) for app container
+  enabled: true
+
+  # -- Defines readiness probe type.
+  # Possible values: "command", "socket" and "httpGet"
+  type: "command"
+
+  # -- Defines port of tcpSocket readiness probe
+  tcpSocketPort: 9000
+
+  # -- Defines path of httpGet readiness probe
+  httpPath: "/"
+
+  # -- Defines port of httpGet readiness probe
+  httpPort: 80
+
+  # -- Defines scheme of httpGet readiness probe
+  httpScheme: "HTTP"
+
+  # -- Defines httpHeaders of httpGet readiness probe
+  httpHeaders: []
+
+  # -- Defines initialDelaySeconds of readiness probe
+  initialDelaySeconds: 1
+
+  # -- Defines periodSeconds of readiness probe
+  periodSeconds: 5
+
+  # -- Defines timeoutSeconds of readiness probe
+  timeoutSeconds: ""
+
+  # -- Defines successThreshold of readiness probe
+  successThreshold: ""
+
+  # -- Defines failureThreshold of readiness probe
+  failureThreshold: ""
+
+  # -- Defines command of exec readiness probe
+  command: |
+    - php-fpm-healthcheck
+
+appLivenessProbe:
+  # -- Enables [liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-command) for app container
+  enabled: true
+
+  # -- Defines liveness probe type.
+  # Possible values: "command", "socket" and "httpGet"
+  type: "command"
+
+  # -- Defines port of tcpSocket liveness probe
+  tcpSocketPort: 9000
+
+  # -- Defines path of httpGet liveness probe
+  httpPath: "/"
+
+  # -- Defines port of httpGet liveness probe
+  httpPort: 80
+
+  # -- Defines scheme of httpGet liveness probe
+  httpScheme: "HTTP"
+
+  # -- Defines httpHeaders of httpGet liveness probe
+  httpHeaders: []
+
+  # -- Defines initialDelaySeconds of liveness probe
+  initialDelaySeconds: 0
+
+  # -- Defines periodSeconds of liveness probe
+  periodSeconds: 10
+
+  # -- Defines timeoutSeconds of liveness probe
+  timeoutSeconds: ""
+
+  # -- Defines successThreshold of liveness probe
+  successThreshold: ""
+
+  # -- Defines failureThreshold of liveness probe
+  failureThreshold: ""
+
+  # -- Defines command of exec liveness probe
+  command: |
+    - php-fpm-healthcheck
+
+# -- Defines Web  application docroot. Creates shared volume for "app" and "nginx" containers. Populated with data by "data" initContainer.
+appDocRoot: /var/www/html
+
+ramDocroot:
+  # -- Creates shared volume in RAM for "app" and "nginx" containers
+  enabled: false
+
+  # -- Defines RAM shared volume size
+  size: 2Gi
+
+appPort:
+  # -- Defines port number of "app" container
+  number: 9000
+
+  # -- Defines port name of "app" container
+  name: tcp-fpm
+
+prestop:
+  # -- Defines [Lifecycle prestop hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for app container
+  command:
+  - /bin/bash
+  - -c
+  - /bin/sleep 10; kill -QUIT 1
+
+# poststart:
+    # -- Defines [Lifecycle poststart hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for app container
+#   command:
+#   - ...
+
+appCommand:
+  # -- Enables custom command and args for "app" container
+  enabled: false
+
+  # -- Defines custom command for "app" container
+  command: ""
+
+  # -- Defines custom args for "app" container
+  args: ""
+
+nginx:
+  # -- Defines [Lifecycle prestop hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for nginx container
+  prestop:
+    command:
+    - /bin/bash
+    - -c
+    - /bin/sleep 10; /usr/sbin/nginx -s quit
+  
+  # -- Defines [Lifecycle poststart hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for nginx container
+  # poststart:
+  #   command:
+  #   - /bin/bash
+  #   - -c
+  #   - /bin/sleep 10; /usr/sbin/nginx -s quit
+
+  # -- Enables adding of [Nginx](https://nginx.org/en/) sidecar container
+  enabled: true
+
+  # -- If enabled uses shared volume for docroot
+  prepopulate: true
+
+  # -- add a shared app nfs pvc in a "nginx" container
+  sharedNfsPvc: false
+
+  # -- Add additional shared volume (mounts directory from node)
+  additionalPvc: []
+  #  - name: cache
+  #    mountPath: /var/www/html/cache
+
+  # -- nginx image name and version. Used in "nginx" container of web application.
+  image: eu.gcr.io/autodoc-234411/nginx:1.17
+
+  # -- specifies an [imagePullPolicy](http://kubernetes.io/docs/user-guide/images/#updating-images) of nginx image.
+  # Possible values: "IfNotPresent", "Always" or "Never"
+  imagePullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      # -- configures requests of CPU for "nginx" container
+      cpu: "500m"
+
+      # -- configures requests of RAM for "nginx" container
+      memory: "1Gi"
+
+    limits:
+      # -- configures limits of RAM for "nginx" container
+      memory: "1Gi"
+  
+  readinessProbe:
+    # -- Enables httpGet [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes) for nginx container
+    enabled: true
+
+    # -- Defines host of httpGet readiness probe
+    host: ""
+    
+    # -- Defines path of httpGet readiness probe
+    path: /
+
+    # -- Defines timeoutSeconds of readiness probe
+    timeoutSeconds: 5
+
+    # -- Defines failureThreshold of readiness probe
+    failureThreshold: 3
+
+    # -- Defines successThreshold of readiness probe
+    successThreshold: 1
+
+    # -- Defines periodSeconds of readiness probe
+    periodSeconds: 10
+
+  livenessProbe:
+    # -- Enables httpGet [liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-command) for nginx container
+    enabled: true
+
+    # -- Defines liveness probe type.
+    # Possible values: "command", "socket" and "httpGet" default value "httpGet"
+    type: "httpGet"
+
+    # -- Defines port of tcpSocket liveness probe
+    tcpSocketPort:
+
+    # -- Defines path of httpGet liveness probe
+    httpPath: "/status"
+
+    # -- Defines port of httpGet liveness probe 
+    httpPort: 80
+
+    # -- Defines scheme of httpGet liveness probe
+    httpScheme: ""
+
+    # -- Defines httpHeaders of httpGet liveness probe
+    httpHeaders: []
+
+    # -- Defines initialDelaySeconds of liveness probe 
+    initialDelaySeconds: 10
+
+    # -- Defines periodSeconds of liveness probe 
+    periodSeconds: 3
+
+    # -- Defines timeoutSeconds of liveness probe 
+    timeoutSeconds: 5
+
+    # -- Defines successThreshold of liveness probe
+    successThreshold: ""
+
+    # -- Defines failureThreshold of liveness probe 
+    failureThreshold: 3
+
+    # -- Defines command of exec liveness probe
+    command: 
+  
+  # -- Nginx config file /etc/nginx/nginx.conf
+  customConfig:
+    # -- Sets the maximum number of simultaneous connections that can be opened by a worker process. -- default 4096
+    worker_connections: 4096
+    # -- Server will close connection after this time -- default 0
+    keepalive_timeout: 0
+    # -- Defines a timeout for reading client request body. (https://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout)
+    client_body_timeout: 10
+
+  # -- Nginx config file /etc/nginx/conf.d/default.conf
+  config: |
+    server {
+      listen 80  default_server;
+      index      index.php index.html;
+      error_log  /dev/stderr warn;
+      access_log /dev/null;
+      root       /var/www/html/public;
+      location / {
+          try_files       $uri $uri/ /index.php?$query_string;
+      }
+      location = /favicon.ico {
+        try_files               $uri $uri/ /favicon.php;
+      }
+      location ~* \.php$ {
+          try_files               $uri = 404;
+          fastcgi_pass            127.0.0.1:9000;
+          include                 fastcgi_params;
+          fastcgi_param           SCRIPT_FILENAME $document_root$fastcgi_script_name;
+          fastcgi_param           PATH_INFO $fastcgi_path_info;
+          fastcgi_param           HTTPS $http_x_forwarded_proto if_not_empty;
+          fastcgi_param           SERVER_PORT $http_x_forwarded_port;
+          fastcgi_param           HTTP_X_REQUEST_START "t=${msec}";
+          fastcgi_param           REMOTE_ADDR $http_x_real_ip;
+          fastcgi_hide_header     X-Powered-By;
+          fastcgi_read_timeout    6000;
+      }
+      location ~* \.(jpg|jpeg|gif|png|bmp|swf|css|js|cur|(gz&!xml.gz)|pdf|img|ttf|woff|woff2|svg|lic)$ {
+          access_log              off;
+          expires                 360d;
+          add_header              Cache-Control public;
+      }
+      location /status {
+          stub_status;
+          auth_basic off;
+          allow all;
+      }
+      location ~ /\. {
+          deny                    all;
+      }
+    }
+
+# -- Environment variable in "app" container
+env: []
+# Example:
+# env:
+# - name: ENV_NAME_1
+#   value: env_value_1
+
+# -- Environment variable from an existing secret in "app" container
+secret_env:
+  # -- existing secret name
+  secretRef: ""
+
+  # -- array of variables names and secret's keys
+  envs: []
+  # Example:
+  # secret_env:
+  #   secretRef: "test-secret"
+  #   envs:
+  #   - name: ENV_SECRET_NAME_1
+  #     key: env_secret_key_from_secretRef_1
+
+  # -- If you need to load all envs from one or many secrets
+  # -- Please use secretRefNames for set existing secret's names
+  secretRefNames: []
+    # - secretName
+    # - secretName1
+
+
+
+# -- Adding entries to Pod /etc/hosts with [HostAliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/)
+hostAliases: {}
+#  "192.168.150.101": ["mongo-repset1", "mongo-rs1"]
+#  "192.168.150.102": ["mongo-repset2", "mongo-rs2"]
+
+# -- Adds secret from data and mounts it in mountPath
+additionalSecretVolumes: []
+#  - name: google-cloud-key
+#    data:
+#      auth.json: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYXV0b2RvYy11c2EiLAogICJwcml2YXRlX2tleV9pZCI6ICJjYTJiMTJiYjNmMTc5YzRjYmIyZTE2MjdhZjQzMjI2NmVkYmVkZjhiIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUN1RGZad3YrN3NwUEs0XG5Mbks5MDM0MWZYd0hRVmZ0elFUKzhvc2Irb205R2tzYWYyd1Rlb0FGSjZJUXRsMmhKcE9Oa3pWbWJCNEl6dVc0XG50THc4aTRPSEVkb3N4YkZFMXNoMW55Z3kyY2owaGdzbW1GMWoyZ0RjQ0NhLzVtK0J6THhNMGFrSDJHelNWUzd5XG5zc29yU3V5WmVaWjVTRVR2YjNtZFJoczREMkQxVnhzUzJXd1ZUZEd6ZHlvTy8rQ25XZC9UeG81RlovNm52dGx2XG5walZxbG5Xb3dRWFlVd21DWGluVjJCWU1lcHZ3UzFBakhkZXp2S2gyM0YvcjhKT2ZPUm8reElYRkdyQ1VEdk4zXG5qMWNTaHhJcHZuRmZ0VEVCRi9SajJBVjFuNC9veU9rdWxoSjRCS1dkaVJkd3FBZVJMc1Q1R2R6Y01ZSGUvenFCXG5EVUNnaEZKZkFnTUJBQUVDZ2dFQVNxaTdsb2FGeG1WRXBlTnFuV2xNUUVhSXZwWDFVUkE1dmVBczhuM251a0UrXG5pT215WXJLUG1tWnpPb2IzSjRwa0RYemhFWU43Nkp4UzVvVkVIeFphLzBPVm1kSGM1YUhaejdaSzZIRUpwWFdmXG43OWk0YW4zWEU0cTlrR0FZWVkyQUVkVjNFMkh1MzlQaE5RS2kvS29CVGgzZEFUNFNMOEJaNHEveE9mMUN3a2w2XG5hTEg4dy9WMDM3c04rcFNBcHptbmFrRUh1Qm9KMUFDdVg1QWx4Y1RURkdHaVpxekkzSnVwNm5NOUNqVUR1ZjdtXG5GNlNuSTI2RTJDNktzMHMvcmdwRHRZSHkvU1M4bVRTTXZhb0w1c09TSmh5SmxnYkNiNEdtTnRqL3U4ZmNrc0k1XG5MSEgwdEhNdnltSVFBWlZtUzhVUEtwL1V2RDVsbGpUNWlBZXMxa3A0TVFLQmdRRG9lT2w3NS8yTWRvV1JsVmFXXG5HSVBrcE5vOXFIWUJVZG9iV0Y0bGZtUlhGQkVpZERoQklGUkJzNnUwZlFDVGZXUGlDTlM2TlVtS0FBTS9SdVpEXG5YZ29MTldTNnJsNWlSQUFScjZLQkZWeVp1RUpxeDEyTlg0dTBna1dqZlVqYWJDTlRqOWM4dWRyMUIyeEd4LzNlXG5mK3lsYzhzNGpMdnpNVXcxeHVkZnBpSExzUUtCZ1FDL3E0T1F4dDN0K2h0R1NxTzZ3MFRTSUlhdEs5a2Y2dDBZXG5HU2xzc0E0UlhZSWRyZlVZUXk1SFBlRDNCZDNRaG5EcWhENCtjZ1NMVXBpSkdDRS9xaEhNQngrWXJ0ZElNR2I2XG55U1NPL0k1V3R5SnlhODdWOG5XTGQwVERER0dtM3FZMm93VVNuZUJjZnRaaXZJTnNES2JVTjNXaUMvVytTRVBUXG5KWENocWk5VER3S0JnRGU0STE1TGNING1Pa1Yyb2RZLzhmenZkaytvL1ArNytxYnJPMFdKVWN0OVI4NFdSUlYzXG5CanJwTVpLRkU0cEdWNVpwdjNNU0twb2svcUpBQUJqTmhXTENYVzVSTk5ZZ3JsT080VWhITW5hMXIxV2dpMC9EXG5RdHoxREhQdkozTVMwRFRMR1MrNDdENG1sVkV4eGl0NlJlSXlLdGRYQkFWNkgyWVVVb2llYlNOQkFvR0FHV3J5XG5XSm0yeHA5YlRKZ0xYSElXeDFMZTZVb2VVaGhBVjdqR2dJNWNYenNxVFN0TGpIc2tRUGhZeEFsNEgvWWtOVVZ5XG5SNit4SUpURWU3SENmd0hidUZYZGY4NzM1Ni9iaURoeWE2L2NaRzJHMk91cEUwQkRERXExeUxQMG96OTFoVnRiXG5DZHY3NitnNkgvL2w0Y2RQdkdiYVo3SDBWZGFaZi8vQUR3QlZwRXNDZ1lCSXJEV2U5Yk4vb3ovWUV5dS9MNHdrXG5acHEvbUhvT1RkOHVPR3d4OWJqbktrUStRdDlYN2xNWjRtdGl2UldYVFp4VzlSR1NqTmIvc1V6aXk0QmdKYituXG5LclUrYWhNdXNGNGN2Zzk4Qjcyemx4aXpaQkJMZFdNYmxZZ1oxb0g5alRUN0xWUWw4dDZlSFFZckxoSitLcmNtXG5NWllWYlU1Z0ExQzBRRGpSRkYyVXBnPT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJhdXRvZG9jLXVzYUBhcHBzcG90LmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTAwOTI3NzkyNDY1NzM5OTg3NDg5IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9hdXRvZG9jLXVzYSU0MGFwcHNwb3QuZ3NlcnZpY2VhY2NvdW50LmNvbSIKfQo=
+#    mountPath: /var/secrets/google
+
+# -- There are several options to define volumes via the external secret.
+
+additionalExternalConfigVolumes: []
+#- name: test-config
+#  mountPath: /var/secret
+#- name: dev-config
+#  mountPath: /var/secret
+
+additionalExternalSecretVolumes: []
+# First option will be useful if you want to mount all keys from the secret as volume.
+# - name: test-name-of-secret
+#   mountPath: /var/secrets/
+# Second option will be useful if you want to mount a particular key as volume from secret.
+# To avoid the files replacement in your target dir - use subPath key with the same name as key in your secret.
+# - name: test-name-of-secret
+#   key: some_secret_key
+#   mountPath: /var/secrets/some_secret_key
+#   subPath: some_secret_key
+# Note that the mountPath key for both approaches (key\name) can be defined as a slice (list). This can be useful if you want to mount one secret or certain secret key in multiple locations in the container filesystem. For instance:
+# - name: test-name-of-secret
+#   mountPath:
+#   - "/var/first_location/some_secret_key"
+#   - "/var/second_location/some_secret_key"
+#   subPath: some_secret_key
+# Additionally if you only want to mount the secret or certain secret key to cli objects - instead of "mountPath" you should use "cliMountPath", it also supports string or slice (list) definitions.
+
+# -- Add PVC mounted from NFS
+additionalNfsPvc: []
+#  - name: pv-storage
+#    size: 4T
+#    nfs:
+#      path: /cdn/aws
+#      server: 10.179.39.186
+#    mountPath: /home/developer/storage/aws
+
+# -- Add PVC in RAM (very fast)
+additionalRamPvc: []
+#  - name: cache
+#    size: 100Mi
+#    mountPath: /var/www/html/cache
+
+# -- Add additional shared volume (mounts directory from node)
+additionalPvc: []
+#  - name: cache
+#    mountPath: /var/www/html/cache
+
+# -- [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) fow web application's Deployment
+nodeSelector: {}
+
+# -- Add [toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) fow web application's Deployment
+tolerations: []
+
+# -- Add [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity) fow web application's Deployment
+affinity: true
+
+affinity_required: true
+
+
+# -- Enable compatibility with Flux system (https://fluxcd.io/flux/concepts/)
+fluxv2: true
+
+# -- Enable [HorisontalPodAutoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+hpa:
+  # -- HorisontalPodAutoscaler API version
+  apiVersion: autoscaling/v1
+
+  # -- Maximum auto scaling limit
+  maxReplicas: 10
+
+  # -- Minimum auto scaling limit
+  minReplicas: 2
+
+  # -- Target CPU utilization percentage. [Algorithm details](https://github.com/kubernetes/website/blob/main/content/en/docs/tasks/run-application/horizontal-pod-autoscale.md#algorithm-details)
+  targetCPUUtilizationPercentage: 70
+
+  metrics:
+    # -- [Custom and external metrics](https://cloud.google.com/kubernetes-engine/docs/concepts/custom-and-external-metrics) for autoscaling workloads
+    enabled: false
+
+    # -- If you need to scale your workload based on the performance of an application or service outside of Kubernetes, you can configure an external metric
+    rules: []
+    #  Example:
+    #  - type: External
+    #    external:
+    #      metricName: custom.googleapis.com|rabbitmq_queue_messages
+    #      targetValue: "15000"
+
+
+serviceMonitor:
+  # -- If true, a ServiceMonitor CRD is created for a prometheus operator
+  # https://github.com/coreos/prometheus-operator
+  enabled: false
+
+  # -- Namespace for ServiceMonitor creation
+  #  namespace:
+  # -- [php-fpm_exporter](https://github.com/hipages/php-fpm_exporter) image name and version. Used in "monitoring" sidecar container of application.
+  image: eu.gcr.io/autodoc-234411/php-fpm_exporter:1.0.0
+
+  # -- Enable "monitoring" sidecar container
+  externalExporter: true
+
+  # -- Monitoring Port to be exported by Service
+  metricsPort: 9253
+  # -- ServiceMonitor endpoint path
+  endpoints:
+    # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).interval param of ServiceMonitor object
+    # -- ServiceMonitor endpoint metricsPath  
+    # -- ServiceMonitor endpoint port
+    # -- ServiceMonitor endpoint honorLabels 
+    # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).scrapeTimeout param of ServiceMonitor object
+    # -- endpoints.scheme param of ServiceMonitor object
+    # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).metricRelabelings param of ServiceMonitor object. [Relabelings vs metricRelabelings](https://github.com/prometheus-operator/prometheus-operator/issues/3246)
+    # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).relabelings param of ServiceMonitor object. [Relabelings vs metricRelabelings](https://github.com/prometheus-operator/prometheus-operator/issues/3246)
+    - interval: 10s
+      path: /metrics
+      port: http-metrics
+      honorLabels: true
+      scrapeTimeout: 10s
+      scheme: http
+      metricRelabelings: []
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          separator: ;
+          regex: ^(.*)$
+          targetLabel: app
+          replacement: $1
+          action: replace
+        - sourceLabels: [__meta_kubernetes_namespace]
+          separator: ;
+          regex: ^(.*)$
+          targetLabel: branch
+          replacement: $1
+          action: replace
+    # - interval: 10s
+    #   metricsPath: /metrics
+    #   port: http-metrics
+    #   honorLabels: true
+    #   scrapeTimeout: 10s
+    #   scheme: http
+    #   metricRelabelings: []
+    #   relabelings:
+    #     - sourceLabels: [__meta_kubernetes_pod_label_app]
+    #       separator: ;
+    #       regex: ^(.*)$
+    #       targetLabel: app
+    #       replacement: $1
+    #       action: replace
+    #     - sourceLabels: [__meta_kubernetes_namespace]
+    #       separator: ;
+    #       regex: ^(.*)$
+    #       targetLabel: branch
+    #       replacement: $1
+    #       action: replace
+  resources:
+    requests:
+      # -- configures requests of CPU for "monitoring" container in web application
+      cpu: "50m"
+
+      # -- configures requests of RAM for "monitoring" container in web application
+      memory: "50Mi"
+
+    limits:
+      # -- configures limits of RAM for "monitoring" container in web application
+      memory: "50Mi"
+
+  # -- Labels added to ServiceMonitor object
+  labels: {}
+
+  # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).interval param of ServiceMonitor object
+  interval: 10s
+
+  # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).scrapeTimeout param of ServiceMonitor object
+  scrapeTimeout: 10s
+
+  # -- endpoints.scheme param of ServiceMonitor object
+  scheme: http
+
+  # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).metricRelabelings param of ServiceMonitor object. [Relabelings vs metricRelabelings](https://github.com/prometheus-operator/prometheus-operator/issues/3246)
+  metricRelabelings: []
+
+  # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).relabelings param of ServiceMonitor object. [Relabelings vs metricRelabelings](https://github.com/prometheus-operator/prometheus-operator/issues/3246)
+  relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_label_app]
+      separator: ;
+      regex: ^(.*)$
+      targetLabel: app
+      replacement: $1
+      action: replace
+    - sourceLabels: [__meta_kubernetes_namespace]
+      separator: ;
+      regex: ^(.*)$
+      targetLabel: branch
+      replacement: $1
+      action: replace
+
+data:
+  # -- configures resources (requests/limits) for "data" initContainer in web application
+  resources: {}
+  # -- set custom commands which you want to run in "data" initContainer in web application
+  customCommands: []
+  # -- add a shared app nfs pvc in "data" initContainer in web application
+  sharedNfsPvc: false
+
+customLabels: {}
+
+commonLabels:
+  env: "Unknown"
+  owner: "Unknown"
+  cluster: "Unknown"
+  type: "Unknown"
+  develop_team: "Unknown"
+
+# Extra volumes to attach to the deployment.
+extraVolumes: []
+# - name: some-folder
+#   emptyDir: {}
+
+# Extra containers to run in the deployment.
+extraContainers: []
+
+# Extra init containers to run in the deployment.
+extraInitContainers: []
+
+# Extra ports for container app.
+extraAppPorts: []
+
+statefulset:
+  # -- Enables Statefulset creation.
+  enabled: false
+
+  # -- podManagementPolicy to manage scaling operation of pods (only in StatefulSet mode)
+  podManagementPolicy: ""
+
+  # -- can be set to RollingUpdate or OnDelete
+  updateStrategy:
+    type: RollingUpdate
+
+  # -- PVC Storage Class for volume
+  storageClass: ""
+
+  # -- PVC Access Modes for volume
+  accessModes:
+    - ReadWriteOnce
+
+  # -- PVC Storage Request for volume
+  size: 8Gi
+
+  # Optionally specify extra list of additional volume claim templates for pods in StatefulSet
+  extraVolumeClaimTemplates: []
+
+# -- to enable POD_NAME env variable
+podName:
+  enabled: false

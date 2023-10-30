@@ -1,0 +1,98 @@
+{{- if .Values.rbac.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  {{- if .Values.rbac.annotations }}
+  annotations:
+    {{- toYaml .Values.rbac.annotations | nindent 4 }}
+  {{- end }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+
+{{- if not .Values.rbac.existingRoleName }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+{{- if eq .Values.rbac.level "namespace" }}
+kind: Role
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . -}}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+{{ else }}
+kind: ClusterRole
+metadata:
+  name: {{ include "project.fullname" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+{{- end }}
+rules:
+- apiGroups:
+  {{- range .Values.rbac.apiGroups }}
+  - {{ . | quote }}
+  {{- end }}
+  resources:
+  {{- range .Values.rbac.resources }}
+  - {{ . | quote }}
+  {{- end }}
+  verbs:
+  {{- range .Values.rbac.verbs }}
+  - {{ . | quote }}
+  {{- end }}
+{{- end }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+{{- if eq .Values.rbac.level "namespace" }}
+kind: RoleBinding
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+{{ else }}
+kind: ClusterRoleBinding
+metadata:
+  {{- if not .Values.rbac.existingRoleName }}
+  name: {{ include "project.fullname" . -}}
+  {{ else }}
+  name: {{ .Values.rbac.existingRoleName }}
+  {{- end }}
+  labels:
+    application: {{ include "project.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+{{- end }}
+  {{- if .Values.rbac.existingRoleName }}
+  name: {{ .Values.rbac.existingRoleName }}
+  {{ else }}
+  name: {{ include "project.fullname" . -}}
+  {{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "project.fullname" . }}
+    namespace: {{ include "project.namespace" . }}
+{{- end }}

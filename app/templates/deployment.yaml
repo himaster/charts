@@ -1,0 +1,559 @@
+{{- if or .Values.deployment.enabled .Values.statefulset.enabled }} 
+{{- $fullname := include "project.fullname" . -}}
+---
+kind: {{- if .Values.deployment.enabled }} Deployment{{- else }} StatefulSet{{- end }}
+apiVersion: apps/v1
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    app: {{ include "project.fullname" . }}
+    app.kubernetes.io/managed-by: "Helm"
+    meta.helm.sh/release-name: {{ include "project.fullname" . }}
+    meta.helm.sh/release-namespace: {{ include "project.namespace" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.statefulset.enabled }}
+  serviceName: {{ include "project.fullname" . }}
+  {{- if .Values.statefulset.podManagementPolicy }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
+  {{- end }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "project.fullname" . }}
+  {{- if .Values.statefulset.enabled }}
+  updateStrategy:
+    {{- with .Values.statefulset.updateStrategy }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- else }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0%
+    type: RollingUpdate
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: "{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}"
+      labels:
+        app: {{ include "project.fullname" . }}
+        {{- toYaml .Values.commonLabels | nindent 8 }}
+        {{- if .Values.customLabels }}
+        {{- toYaml .Values.customLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if .Values.rbac.enabled }}
+      serviceAccountName: {{ include "project.fullname" . }}
+      {{- else if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- end }}
+      {{- if .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if gt (len .Values.hostAliases) 0 }}
+      hostAliases:
+      {{- range $ip, $hosts := .Values.hostAliases }}
+        - ip: {{ $ip | quote }}
+          hostnames:
+          {{- range $hosts }}
+          - {{ . | quote }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+      volumes:
+        {{- range .Values.additionalExternalConfigVolumes }}
+        {{- if .key }}
+        - name: {{ .key | replace "." "-" }}
+          configMap:
+            name: {{ .name }}
+            items:
+              - key: {{ .key }}
+                path: {{ .key }}
+        {{- else }}
+        - name: {{ .name }}
+          configMap:
+            name: {{ .name }}
+        {{- end }}
+        {{- end }}
+        {{- if and .Values.nginx.enabled .Values.nginx.prepopulate}}
+        - name: shared-files
+        {{- if .Values.ramDocroot.enabled }}
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.ramDocroot.size }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.nginx.enabled }}
+        - name: nginx-config-volume
+          configMap:
+            name: {{ include "project.fullname" . }}-nginx-config
+        - name: nginx-main-config-volume
+          configMap:
+            name: {{ include "project.fullname" . }}-nginx-main-config
+        {{- end }}
+        {{- if .Values.ingress.basicAuth.enabled }}
+        - name: nginx-htpasswd
+          secret:
+            secretName: {{ include "project.fullname" . }}-basic-auth
+        {{- end }}
+        {{- range .Values.additionalSecretVolumes }}
+        - name: {{ lower .name }}
+          secret:
+            secretName: {{ $fullname }}-{{ lower .name }}
+        {{- end }}
+        {{- range .Values.additionalExternalSecretVolumes }}
+        {{- if .key }}
+        - name: {{ .key | replace "." "-" }}
+          secret:
+            secretName: {{ .name }}
+            items:
+              - key: {{ .key }}
+                path: {{ .key }}
+        {{- else }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .name }}
+        {{- end }}
+        {{- end }}
+        {{- range .Values.additionalNfsPvc }}
+        - name: {{ lower .name }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-{{ lower .name }}-new
+        {{- end }}
+        {{- range .Values.additionalRamPvc }}
+        - name: {{ lower .name }}
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .size | default "100Mi" | quote }}
+        {{- end }}
+        {{- range .Values.additionalPvc }}
+        - name: {{ lower .name }}
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if or (and .Values.nginx.enabled .Values.nginx.prepopulate) .Values.extraInitContainers }}
+      initContainers:
+      {{- end }}
+        {{- with .Values.extraInitContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.nginx.enabled .Values.nginx.prepopulate }}
+        - name: data
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: Always
+          resources:
+          {{- if .Values.data.resources }}
+            {{- toYaml .Values.data.resources | nindent 12 }}
+          {{- else }}
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: shared-files
+              mountPath: {{ .Values.appDocRoot }}
+            {{- if .Values.data.sharedNfsPvc }}
+            {{- range .Values.additionalNfsPvc }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}  
+            {{- end }}
+          command:
+            - /bin/sh
+            - "-c"
+            - |
+              cd /app;
+              tar cf - . | (cd {{ .Values.appDocRoot }}; tar xvf -);
+              echo ${_PROJECT_NAME} > /tmp/_PROJECT_NAME;
+              {{- range .Values.data.customCommands }}
+              {{ . | indent 14 | trim }}
+              {{- end }}
+        {{- end }}
+      containers:
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        - name: app
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.appReadinessProbe.enabled }}
+          readinessProbe:
+            {{- if eq .Values.appReadinessProbe.type "command" }}
+            exec:
+              command: {{- .Values.appReadinessProbe.command | trim | nindent 16 }}
+            {{- end }}
+            {{- if eq .Values.appReadinessProbe.type "socket" }}
+            tcpSocket:
+              port: {{ .Values.appReadinessProbe.tcpSocketPort }}
+            {{- end }}
+            {{- if eq .Values.appReadinessProbe.type "httpGet" }}
+            httpGet:
+              path: {{ .Values.appReadinessProbe.httpPath }}
+              port: {{ .Values.appReadinessProbe.httpPort }}
+              scheme: {{ .Values.appReadinessProbe.httpScheme }}
+              {{- if .Values.appReadinessProbe.httpHeaders }}
+              httpHeaders: {{- toYaml .Values.appReadinessProbe.httpHeaders | nindent 16 }}
+              {{- end }}
+            {{- end}}
+            initialDelaySeconds: {{ .Values.appReadinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.appReadinessProbe.periodSeconds }}
+            {{- if .Values.appReadinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ .Values.appReadinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if .Values.appReadinessProbe.successThreshold }}
+            successThreshold: {{ .Values.appReadinessProbe.successThreshold }}
+            {{- end }}
+            {{- if .Values.appReadinessProbe.failureThreshold}}
+            failureThreshold: {{ .Values.appReadinessProbe.failureThreshold }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.appLivenessProbe.enabled }}
+          livenessProbe:
+            {{- if eq .Values.appLivenessProbe.type "command" }}
+            exec:
+              command: {{- .Values.appLivenessProbe.command | trim | nindent 16 }}
+            {{- end }}
+            {{- if eq .Values.appLivenessProbe.type "socket" }}
+            tcpSocket:
+              port: {{ .Values.appLivenessProbe.tcpSocketPort }}
+            {{- end }}
+            {{- if eq .Values.appLivenessProbe.type "httpGet" }}
+            httpGet:
+              path: {{ .Values.appLivenessProbe.httpPath }}
+              port: {{ .Values.appLivenessProbe.httpPort }}
+              scheme: {{ .Values.appLivenessProbe.httpScheme }}
+              {{- if .Values.appLivenessProbe.httpHeaders }}
+              httpHeaders: {{- toYaml .Values.appLivenessProbe.httpHeaders | nindent 16 }}
+              {{- end }}
+            {{- end}}
+            initialDelaySeconds: {{ .Values.appLivenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.appLivenessProbe.periodSeconds }}
+            {{- if .Values.appLivenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ .Values.appLivenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if .Values.appLivenessProbe.successThreshold }}
+            successThreshold: {{ .Values.appLivenessProbe.successThreshold }}
+            {{- end }}
+            {{- if .Values.appLivenessProbe.failureThreshold }}
+            failureThreshold: {{ .Values.appLivenessProbe.failureThreshold }}
+            {{- end }}
+          {{- end }}
+          {{- if or .Values.prestop .Values.poststart }}
+          lifecycle:
+          {{- end }}
+            {{- if .Values.prestop }}
+            preStop:
+              exec:
+                command: {{- .Values.prestop.command | toYaml | nindent 16 }}
+            {{- end }}
+            {{- if .Values.poststart }}
+            postStart:
+              exec:
+                command: {{- .Values.poststart.command | toYaml | nindent 16 }}
+            {{- end }}
+          {{- if or (not .Values.nginx.enabled) (and .Values.serviceMonitor.enabled (not .Values.serviceMonitor.externalExporter)) }}
+          ports:
+          {{- with .Values.extraAppPorts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          - containerPort: {{ .Values.appPort.number }}
+            name: {{ .Values.appPort.name }}
+            protocol: {{ .Values.service.protocol }}
+            {{- if and .Values.serviceMonitor.enabled (not .Values.serviceMonitor.externalExporter) }}
+          - containerPort: {{ .Values.serviceMonitor.metricsPort }}
+            name: metrics
+            protocol: TCP
+            {{- end }}
+          {{- end }}
+          {{- if .Values.appCommand.enabled }}
+          command: {{ .Values.appCommand.command }}
+          args: {{ .Values.appCommand.args }}
+          {{- end }}
+          env:
+          - name: APP_ENV
+            {{- if .Values.appEnv }}
+            value: {{ .Values.appEnv }}
+            {{- else }}
+            value: {{ include "project.namespace" . }}
+            {{- end }}
+          {{- if .Values.podName.enabled }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- end }}
+          {{- if .Values.env }}
+          {{- range .Values.env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secret_env.envs }}
+          {{- $secretRef := .Values.secret_env.secretRef -}}
+          {{- range $secret := .Values.secret_env.envs }}
+          - name: {{ $secret.name }}
+            valueFrom:
+              secretKeyRef:
+                key: {{ $secret.key }}
+                name: {{ $secretRef }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secret_env.secretRefNames }}
+          envFrom:
+          {{- range $secretRefName := .Values.secret_env.secretRefNames }}
+          - secretRef:
+              name: {{ $secretRefName }}
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            {{- range .Values.additionalExternalConfigVolumes }}
+            {{- if .key }}
+            - name: {{ .key | replace "." "-" }}
+            {{- else }}
+            - name: {{ .name }}
+            {{- end }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- if and .Values.nginx.enabled .Values.nginx.prepopulate }}
+            - name: shared-files
+              mountPath: {{ .Values.appDocRoot }}
+            {{- end }}
+            {{- range .Values.additionalSecretVolumes }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- range .Values.additionalExternalSecretVolumes }}
+            {{- if kindIs "string" .mountPath }}
+            {{- if .key }}
+            - name: {{ .key | replace "." "-" }}
+            {{- else }}
+            - name: {{ .name }}
+            {{- end }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{ else if kindIs "slice" .mountPath }}
+            {{- $outerRange := . }}
+            {{- range .mountPath }}
+            {{- if $outerRange.key }}
+            - name: {{ $outerRange.key | replace "." "-" }}
+            {{- else }}
+            - name: {{ $outerRange.name }}
+            {{- end }}
+              mountPath: {{ . }}
+              {{- if $outerRange.subPath }}
+              subPath: {{ $outerRange.subPath }} 
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.additionalNfsPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- range .Values.additionalRamPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- range .Values.additionalPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+        {{- if .Values.nginx.enabled }}
+        - name: nginx
+          image: {{ .Values.nginx.image }}
+          imagePullPolicy: {{ .Values.nginx.imagePullPolicy }}
+          resources:
+            {{- toYaml .Values.nginx.resources | nindent 12 }}
+          {{- if .Values.nginx.readinessProbe.enabled }}
+          {{- if .Values.nginx.readinessProbe.host }}
+          readinessProbe:
+            httpGet:
+              httpHeaders:
+              - name: Host
+                value: {{ .Values.nginx.readinessProbe.host }}
+              path: {{ .Values.nginx.readinessProbe.path }}
+              port: http
+            timeoutSeconds: {{ .Values.nginx.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.nginx.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.nginx.readinessProbe.successThreshold }}
+            periodSeconds: {{ .Values.nginx.readinessProbe.periodSeconds }}
+          {{- else if gt (len .Values.ingress.skins) 0 }}
+          readinessProbe:
+            httpGet:
+              httpHeaders:
+              - name: Host
+                value: {{ index (index .Values.ingress.skins 0).hosts 0 }}
+              path: {{ .Values.nginx.readinessProbe.path }}
+              port: http
+            timeoutSeconds: {{ .Values.nginx.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.nginx.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.nginx.readinessProbe.successThreshold }}
+            periodSeconds: {{ .Values.nginx.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.nginx.livenessProbe.enabled }}
+          livenessProbe:
+            {{- if eq .Values.nginx.livenessProbe.type "command" }}
+            exec:
+              command: {{- .Values.nginx.livenessProbe.command | trim | nindent 16 }}
+            {{- end }}
+            {{- if eq .Values.nginx.livenessProbe.type "socket" }}
+            tcpSocket:
+              port: {{ .Values.nginx.livenessProbe.tcpSocketPort }}
+            {{- end }}
+            {{- if eq .Values.nginx.livenessProbe.type "httpGet" }}
+            httpGet:
+              path: {{ .Values.nginx.livenessProbe.httpPath }}
+              port: {{ .Values.nginx.livenessProbe.httpPort }}
+              {{- if .Values.nginx.livenessProbe.httpScheme }}
+              scheme: {{ .Values.nginx.livenessProbe.httpScheme }}
+              {{- end }}
+              {{- if .Values.nginx.livenessProbe.httpHeaders }}
+              httpHeaders: {{- toYaml .Values.nginx.livenessProbe.httpHeaders | nindent 16 }}
+              {{- end }}
+            {{- end}}
+            initialDelaySeconds: {{ .Values.nginx.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.nginx.livenessProbe.periodSeconds }}
+            {{- if .Values.nginx.livenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ .Values.nginx.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if .Values.nginx.livenessProbe.successThreshold }}
+            successThreshold: {{ .Values.nginx.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if .Values.nginx.livenessProbe.failureThreshold }}
+            failureThreshold: {{ .Values.nginx.livenessProbe.failureThreshold }}
+            {{- end }}
+          {{- end }}
+          {{- if or .Values.nginx.prestop .Values.nginx.poststart }}
+          lifecycle:
+          {{- end }}
+            {{- if .Values.nginx.prestop }}
+            preStop:
+              exec:
+                command: {{- .Values.nginx.prestop.command | toYaml | nindent 16 }}
+            {{- end }}
+            {{- if .Values.nginx.poststart }}
+            postStart:
+              exec:
+                command: {{- .Values.nginx.poststart.command | toYaml | nindent 16 }}
+            {{- end }}
+          ports:
+          - containerPort: 80
+            name: http
+            protocol: {{ .Values.service.protocol }}
+          volumeMounts:
+            {{- if .Values.nginx.prepopulate }}
+            - name: shared-files
+              mountPath: {{ .Values.appDocRoot }}
+            {{- end }}
+            {{- range .Values.nginx.additionalPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: nginx-main-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            {{- if and .Values.ingress.basicAuth.enabled  .Values.ingress.basicAuth.custom }}
+            - name: nginx-htpasswd
+              mountPath: /opt/.htpasswd
+              subPath: auth
+            {{- end }}
+            {{- if .Values.nginx.sharedNfsPvc }}
+            {{- range .Values.additionalNfsPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}  
+            {{- end }}
+          {{- if .Values.nginx.command }}
+          command: {{ .Values.nginx.command.cmd }}
+          args: {{ .Values.nginx.command.args }}
+          {{- end }}
+        {{- end }}
+        {{- if and .Values.serviceMonitor.enabled .Values.serviceMonitor.externalExporter }}
+        - name: metrics
+          image: {{ .Values.serviceMonitor.image }}
+          imagePullPolicy: IfNotPresent
+          resources:
+            {{- toYaml .Values.serviceMonitor.resources | nindent 12 }}
+          ports:
+          - name: metrics
+            containerPort: {{ .Values.serviceMonitor.metricsPort }}
+            protocol: TCP
+          env:
+          - name: PHP_FPM_FIX_PROCESS_COUNT
+            value: "true"
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- if .Values.affinity }}
+      affinity:
+        podAntiAffinity:
+        {{- if .Values.affinity_required }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ include "project.fullname" . }}
+            topologyKey: "kubernetes.io/hostname"
+        {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ include "project.fullname" . }}
+              topologyKey: "kubernetes.io/hostname"
+            weight: 100
+        {{- end }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end }}
+{{- if .Values.statefulset.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        {{- range .Values.statefulset.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        storageClassName: {{ .Values.statefulset.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.statefulset.size | quote }}
+    {{- with .Values.statefulset.extraVolumeClaimTemplates }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

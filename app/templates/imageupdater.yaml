@@ -1,0 +1,72 @@
+{{- if .Values.fluxv2 }}
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: {{ template "project.fullname" . }}
+  namespace: flux-system
+spec:
+  {{- if .Values.image.repoSecretName }}
+  secretRef:
+    name: {{ .Values.image.repoSecretName }}
+  {{- end }}
+  image: {{ index (regexSplit ":" .Values.image.repository -1) 0 }}
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: {{ template "project.fullname" . }}
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: {{ template "project.fullname" . }}
+  policy:
+    semver:
+      range: ">=1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: {{ template "project.fullname" . }}
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  suspend: {{ .Values.image.automationSuspend }}
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@noreply.gitlab.autodoc.dev
+        name: fluxcdbot
+      messageTemplate: |-
+        {{`Automated image update
+
+        Automation name: {{ .AutomationObject }}
+
+        Files:
+        {{ range $filename, $_ := .Updated.Files -}}
+        - {{ $filename }}
+        {{ end -}}
+
+        Objects:
+        {{ range $resource, $_ := .Updated.Objects -}}
+        - {{ $resource.Kind }} {{ $resource.Name }}
+        {{ end -}}
+
+        Images:
+        {{ range .Updated.Images -}}
+        - {{.}}
+        {{ end -}}
+        [skip ci]`}}
+    push:
+      branch: main
+  update:
+    path: ./apps/{{ .Values.clusterName }}/{{ template "project.namespace" . }}
+    strategy: Setters
+{{- end }}

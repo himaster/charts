@@ -1,0 +1,47 @@
+{{- if .Values.service.enabled -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "project.fullname" . }}
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    app: {{ include "project.fullname" . }}
+    app.kubernetes.io/managed-by: "Helm"
+    meta.helm.sh/release-name: {{ include "project.fullname" . }}
+    meta.helm.sh/release-namespace: {{ include "project.namespace" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+  {{- if .Values.service.annotations }}
+  annotations:
+{{ toYaml .Values.service.annotations | indent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+{{- if eq .Values.service.type "LoadBalancer" }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  {{- with .Values.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+  ports:
+    {{- with .Values.service.extraServicePorts }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetName }}
+      protocol: {{ .Values.service.protocol }}
+      name: {{ .Values.service.name }}
+    {{- if .Values.serviceMonitor.enabled }}
+    - port: {{ .Values.serviceMonitor.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+      name: http-metrics
+    {{- end }}
+  selector:
+    app: {{ include "project.fullname" . }}
+{{- end }}
