@@ -247,10 +247,10 @@ ramDocroot:
 
 appPort:
   # -- Defines port number of "app" container
-  number: 9000
+  number: 3000
 
   # -- Defines port name of "app" container
-  name: tcp-fpm
+  name: node
 
 prestop:
   # -- Defines [Lifecycle prestop hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for app container
@@ -290,10 +290,10 @@ nginx:
   #   - /bin/sleep 10; /usr/sbin/nginx -s quit
 
   # -- Enables adding of [Nginx](https://nginx.org/en/) sidecar container
-  enabled: true
+  enabled: false
 
   # -- If enabled uses shared volume for docroot
-  prepopulate: true
+  prepopulate: false
 
   # -- add a shared app nfs pvc in a "nginx" container
   sharedNfsPvc: false
