@@ -95,6 +95,9 @@ service:
 ingress:
   # -- Enable [Ingress object](https://kubernetes.io/docs/concepts/services-networking/ingress/) creation
   enabled: true
+  
+  # -- Nginx is configured to automatically discover all ingress with the kubernetes.io/ingress.class: "nginx" annotation or where ingressClassName: nginx is present
+  ingressClassName: nginx
 
   # -- Ingres's [spec.metadata.annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
   annotations:
