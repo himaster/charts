@@ -1,0 +1,16 @@
+apiVersion: v2
+appVersion: "2.0.2"
+description: A Helm chart for the Prometheus Solana Exporter
+name: prometheus-solana-exporter
+version: 0.0.1
+keywords:
+  - metrics
+  - solana
+  - monitoring
+home: https://github.com/certusone/solana_exporter
+sources:
+  - https://github.com/certusone/solana_exporter
+maintainers:
+  - name: himaster
+    email: vitalibicov83@gmail.com
+type: application
