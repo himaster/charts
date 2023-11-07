@@ -31,7 +31,6 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["solana_exporter"]
           args:
             - "-rpcURI={{ .Values.solanaServer }}"
             {{- range $key, $value := .Values.options }}
