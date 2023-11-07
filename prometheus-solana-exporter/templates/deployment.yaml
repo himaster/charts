@@ -42,13 +42,13 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /metrics
               port: http
             initialDelaySeconds: 30
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
-              path: /
+              path: /metrics
               port: http
             initialDelaySeconds: 30
             timeoutSeconds: 10

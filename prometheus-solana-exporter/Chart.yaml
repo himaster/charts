@@ -2,7 +2,7 @@ apiVersion: v2
 appVersion: "2.0.2"
 description: A Helm chart for the Prometheus Solana Exporter
 name: prometheus-solana-exporter
-version: 0.0.3
+version: 0.0.4
 keywords:
   - metrics
   - solana
