@@ -17,6 +17,9 @@ metadata:
     {{- toYaml .Values.customLabels | nindent 4 }}
     {{- end }}
 spec:
+  {{- if not .Values.hpa }}
+  replicas: {{ .Values.replicas }}
+  {{- end}}
   {{- if .Values.statefulset.enabled }}
   serviceName: {{ include "project.fullname" . }}
   {{- if .Values.statefulset.podManagementPolicy }}

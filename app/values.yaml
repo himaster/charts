@@ -23,6 +23,9 @@ image:
     semver:
       range: ">=1.0.0"
 
+# -- Default replicas number
+replicas: 1
+
 deployment:
   # -- Enables main Deployment creation. Needed for web service.
   enabled: true
