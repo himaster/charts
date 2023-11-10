@@ -26,7 +26,7 @@ spec:
     {{- toYaml .Values.image.policyFilter | nindent 4 }}
   {{- end }}
   policy:
-    {{- toYaml .Values.image.policy | nindent 4 }}
+    {{- toYaml .Values.image.policy | default .Values.image.defaultPolicy | nindent 4 }}
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta1
 kind: ImageUpdateAutomation
