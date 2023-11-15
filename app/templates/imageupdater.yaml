@@ -45,7 +45,7 @@ spec:
         branch: main
     commit:
       author:
-        email: fluxcdbot@noreply.gitlab.autodoc.dev
+        email: fluxcdbot@noreply
         name: fluxcdbot
       messageTemplate: |-
         {{`Automated image update

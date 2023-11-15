@@ -314,7 +314,7 @@ nginx:
   #    mountPath: /var/www/html/cache
 
   # -- nginx image name and version. Used in "nginx" container of web application.
-  image: eu.gcr.io/autodoc-234411/nginx:1.17
+  image: nginx:1.17
 
   # -- specifies an [imagePullPolicy](http://kubernetes.io/docs/user-guide/images/#updating-images) of nginx image.
   # Possible values: "IfNotPresent", "Always" or "Never"
@@ -583,7 +583,7 @@ serviceMonitor:
   # -- Namespace for ServiceMonitor creation
   #  namespace:
   # -- [php-fpm_exporter](https://github.com/hipages/php-fpm_exporter) image name and version. Used in "monitoring" sidecar container of application.
-  image: eu.gcr.io/autodoc-234411/php-fpm_exporter:1.0.0
+  image: hipages/php-fpm_exporter:2.2
 
   # -- Enable "monitoring" sidecar container
   externalExporter: true
