@@ -84,6 +84,7 @@ Universal Helm chart for application. Uses [semantic versioning](https://semver.
 | image.automationSuspend | string | `"false"` |  |
 | image.defaultPolicy.semver.range | string | `">=1.0.0"` |  |
 | image.imagePullSecrets | list | `[]` | Define the list of imagePullSecrets for main deployment/statefullset, cronjobs and workers, default secret won't be overwritten. |
+| image.image_ver_updater_enabled | bool | `true` | Enable image version auto-update resources (fluxv2 must be "true") |
 | image.pullPolicy | string | `"IfNotPresent"` | specifies an [imagePullPolicy](http://kubernetes.io/docs/user-guide/images/#updating-images) of main image. Possible values: "IfNotPresent", "Always" or "Never" |
 | image.repoSecretName | string | `"imagesecret"` | Secret for [ImageRepository](https://fluxcd.io/flux/components/image/imagerepositories/) in Flux v2. |
 | image.repository | string | `"laravel:latest"` | main image name and version. Used in data and app containers of web application, in app container of worker and in cron container of cronjob. |
