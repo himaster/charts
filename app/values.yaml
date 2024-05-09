@@ -19,6 +19,9 @@ image:
   # -- Secret for [ImageRepository](https://fluxcd.io/flux/components/image/imagerepositories/) in Flux v2.
   repoSecretName: imagesecret
 
+  # -- Enable image version auto-update resources
+  image_ver_updater_enabled: true
+
   defaultPolicy:
     semver:
       range: ">=1.0.0"
