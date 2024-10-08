@@ -105,7 +105,7 @@ service:
 ingress:
   # -- Enable [Ingress object](https://kubernetes.io/docs/concepts/services-networking/ingress/) creation
   enabled: true
-  
+
   # -- Nginx is configured to automatically discover all ingress with the kubernetes.io/ingress.class: "nginx" annotation or where ingressClassName: nginx is present
   ingressClassName: nginx
 
@@ -294,7 +294,7 @@ nginx:
     - /bin/bash
     - -c
     - /bin/sleep 10; /usr/sbin/nginx -s quit
-  
+
   # -- Defines [Lifecycle poststart hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) for nginx container
   # poststart:
   #   command:
@@ -334,14 +334,14 @@ nginx:
     limits:
       # -- configures limits of RAM for "nginx" container
       memory: "1Gi"
-  
+
   readinessProbe:
     # -- Enables httpGet [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes) for nginx container
     enabled: true
 
     # -- Defines host of httpGet readiness probe
     host: ""
-    
+
     # -- Defines path of httpGet readiness probe
     path: /
 
@@ -371,7 +371,7 @@ nginx:
     # -- Defines path of httpGet liveness probe
     httpPath: "/status"
 
-    # -- Defines port of httpGet liveness probe 
+    # -- Defines port of httpGet liveness probe
     httpPort: 80
 
     # -- Defines scheme of httpGet liveness probe
@@ -380,24 +380,24 @@ nginx:
     # -- Defines httpHeaders of httpGet liveness probe
     httpHeaders: []
 
-    # -- Defines initialDelaySeconds of liveness probe 
+    # -- Defines initialDelaySeconds of liveness probe
     initialDelaySeconds: 10
 
-    # -- Defines periodSeconds of liveness probe 
+    # -- Defines periodSeconds of liveness probe
     periodSeconds: 3
 
-    # -- Defines timeoutSeconds of liveness probe 
+    # -- Defines timeoutSeconds of liveness probe
     timeoutSeconds: 5
 
     # -- Defines successThreshold of liveness probe
     successThreshold: ""
 
-    # -- Defines failureThreshold of liveness probe 
+    # -- Defines failureThreshold of liveness probe
     failureThreshold: 3
 
     # -- Defines command of exec liveness probe
-    command: 
-  
+    command:
+
   # -- Nginx config file /etc/nginx/nginx.conf
   customConfig:
     # -- Sets the maximum number of simultaneous connections that can be opened by a worker process. -- default 4096
@@ -477,7 +477,6 @@ secret_env:
     # - secretName1
 
 
-
 # -- Adding entries to Pod /etc/hosts with [HostAliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/)
 hostAliases: {}
 #  "192.168.150.101": ["mongo-repset1", "mongo-rs1"]
@@ -493,10 +492,10 @@ additionalSecretVolumes: []
 # -- There are several options to define volumes via the external secret.
 
 additionalExternalConfigVolumes: []
-#- name: test-config
-#  mountPath: /var/secret
-#- name: dev-config
-#  mountPath: /var/secret
+# - name: test-config
+#   mountPath: /var/secret
+# - name: dev-config
+#   mountPath: /var/secret
 
 additionalExternalSecretVolumes: []
 # First option will be useful if you want to mount all keys from the secret as volume.
@@ -596,9 +595,9 @@ serviceMonitor:
   # -- ServiceMonitor endpoint path
   endpoints:
     # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).interval param of ServiceMonitor object
-    # -- ServiceMonitor endpoint metricsPath  
+    # -- ServiceMonitor endpoint metricsPath
     # -- ServiceMonitor endpoint port
-    # -- ServiceMonitor endpoint honorLabels 
+    # -- ServiceMonitor endpoint honorLabels
     # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).scrapeTimeout param of ServiceMonitor object
     # -- endpoints.scheme param of ServiceMonitor object
     # -- [endpoints](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#endpoint).metricRelabelings param of ServiceMonitor object. [Relabelings vs metricRelabelings](https://github.com/prometheus-operator/prometheus-operator/issues/3246)
