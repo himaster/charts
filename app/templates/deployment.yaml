@@ -282,8 +282,7 @@ spec:
             {{- end }}
           {{- end }}
           {{- if .Values.appCommand.enabled }}
-          command:
-            {{ toYaml .Values.appCommand.command | indent 12 }}
+          command: {{- .Values.appCommand.command | toYaml | nindent 10 }}
           args: {{ .Values.appCommand.args }}
           {{- end }}
           env:
