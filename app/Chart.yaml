@@ -2,7 +2,7 @@
 apiVersion: v1
 name: app
 description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/) for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
-
+home: https://himaster.github.io/charts/
 maintainers:
 - name: himaster
   email: vitalibicov83@gmail.com
@@ -13,4 +13,4 @@ maintainers:
 #
 # NOTE: this value is set at build time. DO NOT CHANGE.
 #
-version: 1.0.8
+version: 1.1.0
