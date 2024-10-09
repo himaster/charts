@@ -163,6 +163,12 @@ budget:
   # minAvailable:
   maxUnavailable: 20%
 
+migration:
+  # -- Enable post-install,post-upgrade Helm hook for database migration
+  enabled: false
+
+  # -- Configures migration command
+  command: ""
 
 appReadinessProbe:
   # -- Enables [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes) for app container

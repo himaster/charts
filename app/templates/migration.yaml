@@ -1,0 +1,132 @@
+{{- $fullname := include "project.fullname" . -}}
+{{- if .Values.migration.enabled }}
+---
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: {{ include "project.fullname" . }}-migration
+  namespace: {{ include "project.namespace" . }}
+  labels:
+    application: {{ include "project.fullname" . }}
+    {{- toYaml .Values.commonLabels | nindent 4 }}
+    {{- if .Values.customLabels }}
+    {{- toYaml .Values.customLabels | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "project.name" . }}
+        role: migration
+        {{- toYaml .Values.commonLabels | nindent 8 }}
+        {{- if .Values.customLabels }}
+        {{- toYaml .Values.customLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: {{ include "project.fullname" . }}-gcr-json-key
+        {{- if .Values.image.imagePullSecrets }}
+        {{- toYaml .Values.image.imagePullSecrets | nindent 8 }}
+        {{- end }}
+      {{- if gt (len .Values.hostAliases) 0 }}
+      hostAliases:
+      {{- range $ip, $hosts := .Values.hostAliases }}
+        - ip: {{ $ip | quote }}
+          hostnames:
+          {{- range $hosts }}
+          - {{ . | quote }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+      volumes:
+        {{- range .Values.additionalSecretVolumes }}
+        - name: {{ lower .name }}
+          secret:
+            secretName: {{ $fullname }}-{{ lower .name }}
+        {{- end }}
+        {{- range .Values.additionalExternalSecretVolumes }}
+        {{- if .key }}
+        - name: {{ .key | replace "." "-" }}
+          secret:
+            secretName: {{ .name }}
+            items:
+              - key: {{ .key }}
+                path: {{ .key }}
+        {{- else }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .name }}
+        {{- end }}
+        {{- end }}
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- range .Values.additionalSecretVolumes }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- range .Values.additionalExternalSecretVolumes }}
+            {{- if kindIs "string" .mountPath }}
+            {{- if .key }}
+            - name: {{ .key | replace "." "-" }}
+            {{- else }}
+            - name: {{ .name }}
+            {{- end }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{ else if kindIs "slice" .mountPath }}
+            {{- $outerRange := . }}
+            {{- range .mountPath }}
+            {{- if $outerRange.key }}
+            - name: {{ $outerRange.key | replace "." "-" }}
+            {{- else }}
+            - name: {{ $outerRange.name }}
+            {{- end }}
+              mountPath: {{ . }}
+              {{- if $outerRange.subPath }}
+              subPath: {{ $outerRange.subPath }} 
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.env }}
+          env:
+          {{- range .Values.env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secret_env.envs }}
+          {{- $secretRef := .Values.secret_env.secretRef -}}
+          {{- range $secret := .Values.secret_env.envs }}
+          - name: {{ $secret.name }}
+            valueFrom:
+              secretKeyRef:
+                key: {{ $secret.key }}
+                name: {{ $secretRef }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secret_env.secretRefNames }}
+          envFrom:
+          {{- range $secretRefName := .Values.secret_env.secretRefNames }}
+          - secretRef:
+              name: {{ $secretRefName }}
+          {{- end }}
+          {{- end }}
+          command: ["/bin/sh", "-c"]
+          args: {{ .Values.migration.command }}
+{{- end }}
