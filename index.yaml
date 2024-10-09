@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   app:
   - apiVersion: v1
+    created: "2024-10-09T14:27:40.497286924Z"
+    description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
+      for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
+    digest: a96c387fd0f5a70069d2840198d9960431dd4c8b1300fe072b92440ce7d178b4
+    home: https://himaster.github.io/charts/
+    maintainers:
+    - email: vitalibicov83@gmail.com
+      name: himaster
+    name: app
+    urls:
+    - https://github.com/himaster/charts/releases/download/app-1.3.0/app-1.3.0.tgz
+    version: 1.3.0
+  - apiVersion: v1
     created: "2024-10-09T12:57:53.988915201Z"
     description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
       for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
@@ -77,4 +90,4 @@ entries:
     urls:
     - https://github.com/himaster/charts/releases/download/app-1.0.7/app-1.0.7.tgz
     version: 1.0.7
-generated: "2024-10-09T12:57:53.988940047Z"
+generated: "2024-10-09T14:27:40.497364398Z"
