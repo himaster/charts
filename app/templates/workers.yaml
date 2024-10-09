@@ -112,7 +112,6 @@ spec:
         - name: app
           image: {{ $values.image.repository }}
           imagePullPolicy: Always
-          workingDir: /app
           resources:
             requests:
               cpu: {{ .resources.cpu }}
