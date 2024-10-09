@@ -552,6 +552,15 @@ affinity: true
 
 affinity_required: true
 
+# -- Array of workers [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+workers: []
+#  - name: shop.queue
+#    command: "python run.py"
+#    author: Vasily Pupkin
+#    description: Worker for queues
+#    resources:
+#      cpu: "1"
+#      memory: "1Gi"
 
 # -- Enable compatibility with Flux system (https://fluxcd.io/flux/concepts/)
 fluxv2: true

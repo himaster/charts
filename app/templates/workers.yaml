@@ -1,0 +1,205 @@
+{{- $namespace := include "project.namespace" . -}}
+{{- $name := include "project.name" . -}}
+{{- $fullname := include "project.fullname" . -}}
+{{- $releasename := .Release.Name -}}
+{{- $values := .Values -}}
+{{- $chartName := .Chart.Name -}}
+
+{{- if .Values.workers }}
+{{- range .Values.workers }}
+{{- $author := (split "." (default "Unknown" .author))._0 }}
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ trunc 52 (printf "%s-worker-%s" $releasename (lower .name)) }}
+  namespace: {{ $namespace }}
+  labels:
+    application: {{ $fullname }}
+    workerapp: {{ $fullname }}
+    app: {{ .name }}
+    app.kubernetes.io/managed-by: "Helm"
+    meta.helm.sh/release-name: {{ $fullname }}
+    meta.helm.sh/release-namespace: {{ $namespace }}
+    {{- toYaml $values.commonLabels | nindent 4 }}
+    {{- if $values.customLabels }}
+    {{- toYaml $values.customLabels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      workerapp: {{ $fullname }}
+      app: {{ .name }}
+  replicas: {{ if kindIs "float64" .replicas }}{{ .replicas }}{{ else }}1{{ end }}
+  strategy:
+    type: {{ .updateStrategy | default "Recreate" | quote }}
+  template:
+    metadata:
+      labels:
+        workerapp: {{ $fullname }}
+        app: {{ .name }}
+        app_lower: {{ lower .name }}
+        releasename: {{ $releasename }}
+        author: {{ .author | default "Unknown" | quote }}
+        {{- if $values.slackTeams }}
+        {{- range $values.slackTeams }}
+        {{- if eq $author .name }}
+        teamId: {{ .id }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        critical: {{ .critical | default "false" | quote }}
+        {{- toYaml $values.commonLabels | nindent 8 }}
+        {{- if $values.customLabels }}
+        {{- toYaml $values.customLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if $values.rbac.enabled }}
+      serviceAccountName: {{ $fullname }}
+      {{- end }}
+      {{- if $values.image.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $values.image.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if gt (len $values.hostAliases) 0 }}
+      hostAliases:
+      {{- range $ip, $hosts := $values.hostAliases }}
+        - ip: {{ $ip | quote }}
+          hostnames:
+          {{- range $hosts }}
+          - {{ . | quote }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if or $values.additionalExternalSecretVolumes $values.additionalSecretVolumes $values.additionalNfsPvc $values.additionalRamPvc $values.additionalPvc }}
+      volumes:
+        {{- range $values.additionalExternalSecretVolumes }}
+        {{- if .key }}
+        - name: {{ .key | replace "." "-" }}
+          secret:
+            secretName: {{ .name }}
+            items:
+              - key: {{ .key }}
+                path: {{ .key }}
+        {{- else }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .name }}
+        {{- end }}
+        {{- end }}
+        {{- range $values.additionalSecretVolumes }}
+        - name: {{ lower .name }}
+          secret:
+            secretName: {{ $fullname }}-{{ lower .name }}
+        {{- end }}
+        {{- range $values.additionalNfsPvc }}
+        - name: {{ lower .name }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-{{ lower .name }}-new
+        {{- end }}
+        {{- range $values.additionalRamPvc }}
+        - name: {{ lower .name }}
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .size | default "100Mi" | quote }}
+        {{- end }}
+        {{- range $values.additionalPvc }}
+        - name: {{ lower .name }}
+          emptyDir: {}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: app
+          image: {{ $values.image.repository }}
+          imagePullPolicy: Always
+          workingDir: /app
+          resources:
+            requests:
+              cpu: {{ .resources.cpu }}
+              memory: {{ .resources.memory }}
+            limits:
+              memory: {{ .resources.memory }}
+          env:
+          - name: ROLE
+            value: "worker"
+          {{- if $values.podName.enabled }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- end }}
+          {{- if $values.env }}
+          {{- range $values.env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- if $values.secret_env.envs }}
+          {{- $secretRef := $values.secret_env.secretRef -}}
+          {{- range $secret := $values.secret_env.envs }}
+          - name: {{ $secret.name }}
+            valueFrom:
+              secretKeyRef:
+                key: {{ $secret.key }}
+                name: {{ $secretRef }}
+          {{- end }}
+          {{- end }}
+          {{- if $values.secret_env.secretRefNames }}
+          envFrom:
+          {{- range $secretRefName := $values.secret_env.secretRefNames }}
+          - secretRef:
+              name: {{ $secretRefName }}
+          {{- end }}
+          {{- end }}
+          {{- if or $values.additionalExternalSecretVolumes $values.additionalSecretVolumes $values.additionalNfsPvc $values.additionalRamPvc $values.additionalPvc }}
+          volumeMounts:
+            {{- range $values.additionalExternalSecretVolumes }}
+            {{- if or (kindIs "string" .mountPath) (kindIs "string" .cliMountPath) }}
+            {{- if .key }}
+            - name: {{ .key | replace "." "-" }}
+            {{- else }}
+            - name: {{ .name }}
+            {{- end }}
+              mountPath: {{ .cliMountPath | default .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{ else if or (kindIs "slice" .mountPath) (kindIs "slice" .cliMountPath) }}
+            {{- $outerRange := . }}
+            {{- range .cliMountPath | default .mountPath }}
+            {{- if $outerRange.key }}
+            - name: {{ $outerRange.key | replace "." "-" }}
+            {{- else }}
+            - name: {{ $outerRange.name }}
+            {{- end }}
+              mountPath: {{ . }}
+              {{- if $outerRange.subPath }}
+              subPath: {{ $outerRange.subPath }} 
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- range $values.additionalSecretVolumes }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- range $values.additionalNfsPvc }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- range $values.additionalRamPvc }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- range $values.additionalPvc }}
+            - name:  {{ lower .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+          {{- end }}
+          command: ["/bin/sh", "-c"]
+          args: ["{{ .command }}"]
+{{- end }}
+{{- end }}
