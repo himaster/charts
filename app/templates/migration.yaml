@@ -42,7 +42,7 @@ spec:
           {{- end }}
       {{- end }}
       {{- end }}
-      {{- if or .Values.additionalSecretVolumes .Values.additionalExternalSecretVolumes }}
+      {{- if or .Values.additionalSecretVolumes .Values.additionalExternalSecretVolumes .Values.additionalPvc }}
       volumes:
         {{- range .Values.additionalSecretVolumes }}
         - name: {{ lower .name }}
@@ -63,6 +63,10 @@ spec:
             secretName: {{ .name }}
         {{- end }}
         {{- end }}
+        {{- range .Values.additionalPvc }}
+        - name: {{ lower .name }}
+          emptyDir: {}
+        {{- end }}
       {{- end }}
       containers:
         - name: app
@@ -72,7 +76,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
-          {{- if or .Values.additionalSecretVolumes .Values.additionalExternalSecretVolumes }}
+          {{- if or .Values.additionalSecretVolumes .Values.additionalExternalSecretVolumes .Values.additionalPvc }}
           volumeMounts:
             {{- range .Values.additionalSecretVolumes }}
             - name: {{ lower .name }}
@@ -106,6 +110,10 @@ spec:
               {{- end }}
             {{- end }}
             {{- end }}
+            {{- end }}
+            {{- range .Values.additionalPvc }}
+            - name: {{ lower .name }}
+              mountPath: {{ .mountPath }}
             {{- end }}
           {{- end }}
           {{- if .Values.env }}
