@@ -1,0 +1,21 @@
+apiVersion: 1.0.6
+description: IPFS Cluster Chart
+name: ipfs-cluster
+version: 0.0.20
+home: https://ipfscluster.io/
+keywords:
+  - ipfs
+  - ipfs-cluster
+source:
+  - https://github.com/paradeum-team/ipfs-cluster-chart
+  - https://github.com/ipfs-cluster/ipfs-cluster
+maintainers:
+  - name: liujinye
+    email: 75710541@qq.com
+    url: https://github.com/ss75710541
+annotations:
+  artifacthub.io/links: |
+    - name: Chart Source
+      url: https://github.com/paradeum-team/ipfs-cluster-chart
+    - name: Source
+      url: https://github.com/ipfs-cluster/ipfs-cluster

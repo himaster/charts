@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ipfs-cluster.configmapBootstrapName" . }}
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    #set -e
+    set -x
+    user=ipfs
+
+    # This is a custom entrypoint for k8s designed to connect to the bootstrap
+    # node running in the cluster. It has been set up using a configmap to
+    # allow changes on the fly.
+
+
+    if [ ! -f /data/ipfs-cluster/service.json ]; then
+      ipfs-cluster-service init
+    fi
+
+    PEER_HOSTNAME=`cat /proc/sys/kernel/hostname`
+
+    if [ "$CLUSTER_TRACING_JAEGERAGENT_ENDPOINT" == "" ]; then
+      export CLUSTER_TRACING_JAEGERAGENTENDPOINT="/ip4/$NODE_IP/udp/6831"
+    else
+      export CLUSTER_TRACING_JAEGERAGENTENDPOINT="$CLUSTER_TRACING_JAEGERAGENT_ENDPOINT"
+    fi
+    
+
+    grep -q ".*ipfs-cluster.*-0.*" /proc/sys/kernel/hostname
+    if [ $? -eq 0 ]; then
+      CLUSTER_ID=${BOOTSTRAP_PEER_ID} \
+      CLUSTER_PRIVATEKEY=${BOOTSTRAP_PEER_PRIV_KEY} \
+      exec ipfs-cluster-service daemon --upgrade
+    else
+      BOOTSTRAP_ADDR=/dns4/${SVC_NAME}-0.${SVC_NAME}/tcp/9096/ipfs/${BOOTSTRAP_PEER_ID}
+
+      if [ -z $BOOTSTRAP_ADDR ]; then
+        exit 1
+      fi
+      # Only ipfs user can get here
+      exec ipfs-cluster-service daemon --upgrade --bootstrap $BOOTSTRAP_ADDR --leave
+    fi
+
+  configure-ipfs.sh: |
+    #!/bin/sh
+    set -e
+    set -x
+    user=ipfs
+    repo=/data/ipfs
+    # This is a custom entrypoint for k8s designed to run ipfs nodes in an appropriate
+    # setup for production scenarios.
+
+    mkdir -p /data/ipfs && chown -R ipfs /data/ipfs
+
+    if [ `id -u` -eq 0 ]; then
+      echo "Changing user to $user"
+      # ensure folder is writable
+      su-exec "$user" test -w "$repo" || chown -R -- "$user" "$repo"
+      # restart script with new privileges
+      exec su-exec "$user" sh "$0" "$@"
+    fi
+
+    if [ -f /data/ipfs/config ]; then
+      if [ -f /data/ipfs/repo.lock ]; then
+        rm /data/ipfs/repo.lock
+      fi
+      ipfs config Datastore.StorageMax $IPFS_DATASTORE_STORAGEMAX
+      exit 0
+    fi
+
+    ipfs init --profile=badgerds,server
+    ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001
+    ipfs config --json Addresses.Swarm '["/ip4/0.0.0.0/tcp/4001","/ip4/0.0.0.0/udp/4001/quic"]'
+    ipfs config --json Addresses.NoAnnounce '["/ip4/100.64.0.0/ipcidr/10","/ip4/169.254.0.0/ipcidr/16","/ip4/172.16.0.0/ipcidr/12","/ip4/192.0.0.0/ipcidr/24","/ip4/192.0.2.0/ipcidr/24","/ip4/192.168.0.0/ipcidr/16","/ip4/198.18.0.0/ipcidr/15","/ip4/198.51.100.0/ipcidr/24","/ip4/203.0.113.0/ipcidr/24","/ip4/240.0.0.0/ipcidr/4","/ip6/100::/ipcidr/64","/ip6/2001:2::/ipcidr/48","/ip6/2001:db8::/ipcidr/32","/ip6/fc00::/ipcidr/7","/ip6/fe80::/ipcidr/10"]'
+    ipfs config --json Swarm.AddrFilters '["/ip4/100.64.0.0/ipcidr/10","/ip4/169.254.0.0/ipcidr/16","/ip4/172.16.0.0/ipcidr/12","/ip4/192.0.0.0/ipcidr/24","/ip4/192.0.2.0/ipcidr/24","/ip4/192.168.0.0/ipcidr/16","/ip4/198.18.0.0/ipcidr/15","/ip4/198.51.100.0/ipcidr/24","/ip4/203.0.113.0/ipcidr/24","/ip4/240.0.0.0/ipcidr/4","/ip6/100::/ipcidr/64","/ip6/2001:2::/ipcidr/48","/ip6/2001:db8::/ipcidr/32","/ip6/fc00::/ipcidr/7","/ip6/fe80::/ipcidr/10"]'
+    ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080
+    ipfs config --json Swarm.ConnMgr.HighWater 2000
+    ipfs config --json Datastore.BloomFilterSize 1048576
+    ipfs config Datastore.StorageMax $IPFS_DATASTORE_STORAGEMAX
+    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
+    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST"]'
+
+  peers-health-check.sh: |
+    #!/bin/sh
+    #set -e
+    ipfsID=${HOSTNAME##*-}
+    if [ -z "$CLUSTER_RESTAPI_BASICAUTHCREDENTIALS" ];then
+        count=`ipfs-cluster-ctl id|awk -F \| '/peers/{print  $3}'|awk '{print $2}'`
+    else
+        count=`ipfs-cluster-ctl --basic-auth $CLUSTER_RESTAPI_BASICAUTHCREDENTIALS -f id|awk -F \| '/peers/{print  $3}'|awk '{print $2}'`
+    fi
+    
+    if [ -z "$ipfsID" ] || [  -z "$count" ];then
+        echo "ipfsID or count is empty." && echo 1 > /data/health/cluster-peers-check && exit 1
+    fi
+
+    if [ $ipfsID -gt 0 ] && [ $count -eq 0 ];then
+      echo "ipfs cluster $ipfsID, Sees $count other peers" && echo 1 > /data/health/cluster-peers-check && exit 1
+    fi
+
+    echo "ipfs cluster $ipfsID, See $count other peers." && echo 0 > /data/health/cluster-peers-check
