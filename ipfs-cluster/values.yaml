@@ -20,6 +20,8 @@ clusterRestApiPrivateKey: "CAESQEmvGJbMboEibpcWCTKOtDYU2eEyyHLN9gDdJli6Z2tksAkhF
 clusterRestApiBasicAuth: "pld:password"
 clusterCRDTtrustedPeers: "12D3KooWNYut1XL31b4KUnCZmC8Mu7WqGn6QdwnptGpS5tnhSttR,12D3KooWNYut1XL31b4KUnCZmC8Mu7WqGn6QdwnptGpS5tnhSttR"
 ##################
+ipfsClusterReadinessProbe:
+  enabled: true
 clusterMonitorPingInterval: 2s
 clusterReplicationFactorMin: -1
 clusterReplicationFactorMax: -1

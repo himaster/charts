@@ -168,6 +168,7 @@ spec:
             - name: metrics
               containerPort: 8888
               protocol: TCP
+          {{- if .Values.ipfsClusterReadinessProbe.enabled }}
           readinessProbe:
             exec:
               command:
@@ -175,6 +176,7 @@ spec:
               - /custom/peers-health-check.sh
             initialDelaySeconds: 5
             periodSeconds: 10
+          {{- end }}
           livenessProbe:
             tcpSocket:
               port: cluster-swarm
