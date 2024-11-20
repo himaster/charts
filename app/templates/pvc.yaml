@@ -24,6 +24,5 @@ spec:
   resources:
     requests:
       storage: {{ .size }}
-  persistentVolumeReclaimPolicy: Delete
 {{- end }}
 {{- end }}
