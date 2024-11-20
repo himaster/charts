@@ -133,7 +133,7 @@ spec:
         {{- range .Values.additionalNfsPvc }}
         - name: {{ lower .name }}
           persistentVolumeClaim:
-            claimName: {{ $fullname }}-{{ lower .name }}-new
+            claimName: {{ $fullname }}-{{ lower .name }}
         {{- end }}
         {{- range .Values.additionalRamPvc }}
         - name: {{ lower .name }}
