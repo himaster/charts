@@ -18,7 +18,7 @@ metadata:
     {{- toYaml $values.customLabels | nindent 4 }}
     {{- end }}
 spec:
-  storageClassName: "nfs"
+  storageClassName: {{ default nfs .storageClassName | quote }}
   accessModes:
     - ReadWriteMany
   resources:
