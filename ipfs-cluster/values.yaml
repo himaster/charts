@@ -26,6 +26,13 @@ clusterMonitorPingInterval: 2s
 clusterReplicationFactorMin: -1
 clusterReplicationFactorMax: -1
 replicaCount: 1
+resources:
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+  limits:
+    cpu: "2"
+    memory: "2Gi"
 serviceExternalIPs: []
 tracing:
   enabled: false

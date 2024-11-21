@@ -78,7 +78,7 @@ spec:
             - name: health-storage
               mountPath: /data/health
           resources:
-            {}
+            {{- toYaml .Values.resources | nindent 12 }}
         - name: ipfs-cluster
           image: {{ .Values.ipfsClusterImage.repo }}:{{ .Values.ipfsClusterImage.tag }}
           imagePullPolicy: IfNotPresent
@@ -191,7 +191,12 @@ spec:
             - name: health-storage
               mountPath: /data/health
           resources:
-            {}    
+            requests:
+              cpu: "50m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "100Mi"
       volumes:
         - name: configure-script
           configMap:
