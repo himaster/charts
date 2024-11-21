@@ -189,6 +189,28 @@ entries:
         - name: Source
           url: https://github.com/ipfs-cluster/ipfs-cluster
     apiVersion: 1.0.6
+    created: "2024-11-21T19:43:39.985784743Z"
+    description: IPFS Cluster Chart
+    digest: 26c82b20c914bc4cfff59f6bccf3a91476171d6c797440dcb4a22451a05d2440
+    home: https://ipfscluster.io/
+    keywords:
+    - ipfs
+    - ipfs-cluster
+    maintainers:
+    - email: 75710541@qq.com
+      name: liujinye
+      url: https://github.com/ss75710541
+    name: ipfs-cluster
+    urls:
+    - https://github.com/himaster/charts/releases/download/ipfs-cluster-0.0.22/ipfs-cluster-0.0.22.tgz
+    version: 0.0.22
+  - annotations:
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/paradeum-team/ipfs-cluster-chart
+        - name: Source
+          url: https://github.com/ipfs-cluster/ipfs-cluster
+    apiVersion: 1.0.6
     created: "2024-11-15T13:23:53.740998602Z"
     description: IPFS Cluster Chart
     digest: 5ecf0b71ce82033ca50848d62331b5e52f0270c1f75afc0b56abb72cd4a5423e
@@ -226,4 +248,4 @@ entries:
     urls:
     - https://github.com/himaster/charts/releases/download/ipfs-cluster-0.0.20/ipfs-cluster-0.0.20.tgz
     version: 0.0.20
-generated: "2024-11-20T17:51:34.097123058Z"
+generated: "2024-11-21T19:43:39.985835498Z"
