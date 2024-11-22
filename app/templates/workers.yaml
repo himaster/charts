@@ -117,6 +117,7 @@ spec:
               cpu: {{ .resources.cpu }}
               memory: {{ .resources.memory }}
             limits:
+              cpu: {{ .resources.cpu }}
               memory: {{ .resources.memory }}
           env:
           - name: ROLE
