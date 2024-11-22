@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   app:
   - apiVersion: v1
+    created: "2024-11-22T10:03:10.268606486Z"
+    description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
+      for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
+    digest: 6f6cd291e049368ac7415e31617cf0b7e1612cb979bc36319bbe62a5cdd0681e
+    home: https://himaster.github.io/charts/
+    maintainers:
+    - email: vitalibicov83@gmail.com
+      name: himaster
+    name: app
+    urls:
+    - https://github.com/himaster/charts/releases/download/app-1.3.8/app-1.3.8.tgz
+    version: 1.3.8
+  - apiVersion: v1
     created: "2024-11-20T17:51:34.096970771Z"
     description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
       for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
@@ -189,6 +202,28 @@ entries:
         - name: Source
           url: https://github.com/ipfs-cluster/ipfs-cluster
     apiVersion: 1.0.6
+    created: "2024-11-22T10:03:10.425716862Z"
+    description: IPFS Cluster Chart
+    digest: fdb318d3d400724c5f3db134462c9cf94e375b8ec97d05ffbb1d4c00c1ba808b
+    home: https://ipfscluster.io/
+    keywords:
+    - ipfs
+    - ipfs-cluster
+    maintainers:
+    - email: 75710541@qq.com
+      name: liujinye
+      url: https://github.com/ss75710541
+    name: ipfs-cluster
+    urls:
+    - https://github.com/himaster/charts/releases/download/ipfs-cluster-0.0.23/ipfs-cluster-0.0.23.tgz
+    version: 0.0.23
+  - annotations:
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/paradeum-team/ipfs-cluster-chart
+        - name: Source
+          url: https://github.com/ipfs-cluster/ipfs-cluster
+    apiVersion: 1.0.6
     created: "2024-11-21T19:43:39.985784743Z"
     description: IPFS Cluster Chart
     digest: 26c82b20c914bc4cfff59f6bccf3a91476171d6c797440dcb4a22451a05d2440
@@ -248,4 +283,4 @@ entries:
     urls:
     - https://github.com/himaster/charts/releases/download/ipfs-cluster-0.0.20/ipfs-cluster-0.0.20.tgz
     version: 0.0.20
-generated: "2024-11-21T19:43:39.985835498Z"
+generated: "2024-11-22T10:03:10.425908059Z"
