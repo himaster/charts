@@ -120,6 +120,9 @@ spec:
         {{- if .key }}
         - name: {{ .key | replace "." "-" }}
           secret:
+            {{- if .defaultMode }}
+            defaultMode: {{ .defaultMode }}
+            {{- end }}
             secretName: {{ .name }}
             items:
               - key: {{ .key }}
@@ -127,6 +130,9 @@ spec:
         {{- else }}
         - name: {{ .name }}
           secret:
+            {{- if .defaultMode }}
+            defaultMode: {{ .defaultMode }}
+            {{- end }}
             secretName: {{ .name }}
         {{- end }}
         {{- end }}
