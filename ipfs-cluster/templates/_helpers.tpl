@@ -23,6 +23,7 @@ If release name contains chart name it will be used as a full name.
 {{- else }}
 {{ .Release.Name }}
 {{- end }}
+{{- end }}
 
 {{/* Returns the configmap env name */}}
 {{- define "ipfs-cluster.configmapEnvName" -}}
