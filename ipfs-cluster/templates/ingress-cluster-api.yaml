@@ -23,5 +23,5 @@ spec:
           service:
             name: {{ include "ipfs-cluster.serviceNameLocal" . }}
             port: 
-              name: api-http
+              name: {{ .Values.ingress.clusterApi.port }}
 {{- end }}

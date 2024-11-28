@@ -21,6 +21,6 @@ spec:
         backend:
           service:
             name: {{ include "ipfs-cluster.serviceNameHttp" . }}
-            port: 
-              name: gateway
+            port:
+              name: {{ .Values.ingress.gateway.port }}
 {{- end }}

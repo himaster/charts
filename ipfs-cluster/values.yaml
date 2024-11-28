@@ -44,11 +44,13 @@ ingress:
   gateway:
     enabled: false
     host: ipfs-gateway.pld.community
+    port: gateway
     secretName: pld-community-tls
     annotations: {}
   clusterApi:
     enabled: false
     host: ipfs-cluster-api.pld.community
+    port: api-http
     secretName: pld-community-tls
     proxyBodySize: 1024M
     annotations: {}
