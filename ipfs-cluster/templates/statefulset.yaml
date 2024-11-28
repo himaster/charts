@@ -119,7 +119,10 @@ spec:
             - name: CLUSTER_RESTAPI_ID
               value: {{ .Values.clusterRestApiId }}
             - name: CLUSTER_RESTAPI_PRIVATEKEY
-              value: "{{ .Values.clusterRestApiPrivateKey }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ipfs-cluster.secretName" . }}
+                  key: cluster-restapi-private-key
             - name: CLUSTER_RESTAPI_BASICAUTHCREDENTIALS
               valueFrom:
                 secretKeyRef:

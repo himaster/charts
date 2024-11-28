@@ -18,6 +18,9 @@ If release name contains chart name it will be used as a full name.
 
 {{/* Returns the cluster secret name */}}
 {{- define "ipfs-cluster.secretName" -}}
+{{- if .Values.clusterSecretName }}
+{{- .Values.clusterSecretName }}
+{{- else }}
 {{ .Release.Name }}
 {{- end }}
 
