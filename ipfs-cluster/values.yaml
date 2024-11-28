@@ -45,11 +45,13 @@ ingress:
     enabled: false
     host: ipfs-gateway.pld.community
     secretName: pld-community-tls
+    annotations: {}
   clusterApi:
     enabled: false
     host: ipfs-cluster-api.pld.community
     secretName: pld-community-tls
     proxyBodySize: 1024M
+    annotations: {}
 persistence:
   enabled: true
   clusterStorage: 5Gi

@@ -5,6 +5,7 @@ metadata:
   name: {{ .Release.Name }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
+    {{- toYaml .Values.ingress.gateway.annotations | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   tls:
