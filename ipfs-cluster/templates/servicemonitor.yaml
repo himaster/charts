@@ -33,4 +33,5 @@ spec:
   selector:
     matchLabels:
       node: {{ .Release.Name }}
+      servicemonitor: "true"
 {{- end }}

@@ -49,6 +49,7 @@ metadata:
   name: {{ include "ipfs-cluster.serviceNameLocal" . }}
   labels:
     node: {{ .Release.Name }}
+    servicemonitor: "true"
 spec:
   ports:
   - name: api
