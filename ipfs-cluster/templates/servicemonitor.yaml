@@ -1,0 +1,39 @@
+{{- if .Values.monitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-servicemonitor
+  labels:
+    node: {{ .Release.Name }}
+spec:
+  endpoints:
+  - honorLabels: true
+    interval: 15s
+    metricRelabelings: []
+    path: /debug/metrics/prometheus
+    port: api
+    relabelings:
+    - action: replace
+      regex: ^(.*)$
+      replacement: $1
+      separator: ;
+      sourceLabels:
+      - __meta_kubernetes_pod_label_app
+      targetLabel: app
+    - action: replace
+      regex: ^(.*)$
+      replacement: $1
+      separator: ;
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      targetLabel: branch
+    scheme: http
+    scrapeTimeout: 10s
+  jobLabel: ipfs
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+{{- end }}
