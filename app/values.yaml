@@ -117,9 +117,6 @@ ingress:
     prometheus.io/port: "10254"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "14400"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      proxy_set_header Authorization $http_authorization;
-      proxy_pass_header Authorization;
 
   basicAuth:
     # -- Add Basic Auth functionality to ingresses
