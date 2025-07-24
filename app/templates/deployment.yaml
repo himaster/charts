@@ -520,6 +520,7 @@ spec:
           env:
           - name: PHP_FPM_FIX_PROCESS_COUNT
             value: "true"
+        {{- end}}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
@@ -571,4 +572,4 @@ spec:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 {{- end }}
-{{- end }}
+
