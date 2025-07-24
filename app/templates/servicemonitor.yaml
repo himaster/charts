@@ -22,7 +22,7 @@ metadata:
     {{- end }}
 spec:
   endpoints:
-{{ toYaml .Values.serviceMonitor.endpoints | indent 4 }}
+    {{- toYaml .Values.serviceMonitor.endpoints | nindent 4 }}
   jobLabel: "{{ .Release.Name }}"
   selector:
     matchLabels:

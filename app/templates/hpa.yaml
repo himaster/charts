@@ -1,6 +1,6 @@
 {{- if .Values.hpa }}
 ---
-apiVersion: {{ .Values.hpa.apiVersion | default "autoscaling/v1 " | quote }}
+apiVersion: {{ .Values.hpa.apiVersion | default "autoscaling/v1" | quote }}
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ template "project.fullname" . }}
