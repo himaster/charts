@@ -1,7 +1,7 @@
 {{- if .Values.fluxv2 }}
 {{- if .Values.image.image_ver_updater_enabled }}
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
 metadata:
   name: {{ template "project.fullname" . }}
@@ -14,7 +14,7 @@ spec:
   image: {{ index (regexSplit ":" .Values.image.repository -1) 0 }}
   interval: 1m0s
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImagePolicy
 metadata:
   name: {{ template "project.fullname" . }}
@@ -29,7 +29,7 @@ spec:
   policy:
     {{- toYaml .Values.image.policy | default .Values.image.defaultPolicy | nindent 4 }}
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageUpdateAutomation
 metadata:
   name: {{ template "project.fullname" . }}
