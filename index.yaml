@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   app:
   - apiVersion: v1
+    created: "2026-03-26T16:43:23.039268442Z"
+    description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
+      for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
+    digest: 9e1be5d267ec1b462496fee2de7aa0b45d6a9d3ac2437b068becf731c01b2ef4
+    home: https://himaster.github.io/charts/
+    maintainers:
+    - email: vitalibicov83@gmail.com
+      name: himaster
+    name: app
+    urls:
+    - https://github.com/himaster/charts/releases/download/app-1.3.14/app-1.3.14.tgz
+    version: 1.3.14
+  - apiVersion: v1
     created: "2026-02-06T12:37:08.413120908Z"
     description: Universal Helm chart for application. Uses [semantic versioning](https://semver.org/)
       for safe updates and compatibility. Documentation generated with [helm-docs](https://github.com/norwoodj/helm-docs)
@@ -502,4 +515,4 @@ entries:
     urls:
     - https://github.com/himaster/charts/releases/download/ipfs-cluster-0.0.20/ipfs-cluster-0.0.20.tgz
     version: 0.0.20
-generated: "2026-02-06T12:37:08.413303829Z"
+generated: "2026-03-26T16:43:23.039419074Z"
